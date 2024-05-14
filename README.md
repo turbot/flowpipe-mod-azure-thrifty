@@ -1,0 +1,1 @@
+# Azure Thrifty Mod for Flowpipe
