@@ -17,7 +17,7 @@ mod "azure_thrifty" {
       version = "*"
     }
     mod "github.com/turbot/flowpipe-mod-azure" {
-      version = "*"
+      version = "v0.2.0-rc.0"
     }
   }
 }
