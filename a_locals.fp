@@ -39,4 +39,5 @@ locals {
 locals {
   pipeline_optional_message                 = detect_correct.pipeline.optional_message
   azure_pipeline_delete_compute_snapshot    = azure.pipeline.delete_compute_snapshot
+  azure_pipeline_delete_network_public_ip = azure.pipeline.delete_network_public_ip
 }
