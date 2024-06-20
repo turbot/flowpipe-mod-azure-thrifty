@@ -37,6 +37,9 @@ locals {
 
 // Pipeline References
 locals {
-  pipeline_optional_message                 = detect_correct.pipeline.optional_message
-  azure_pipeline_delete_compute_snapshot    = azure.pipeline.delete_compute_snapshot
+  pipeline_optional_message                       = detect_correct.pipeline.optional_message
+  azure_pipeline_delete_compute_snapshot          = azure.pipeline.delete_compute_snapshot
+  azure_pipeline_delete_network_nat_gateway       = azure.pipeline.delete_network_nat_gateway
+  azure_pipeline_delete_network_load_balancer     = azure.pipeline.delete_network_load_balancer
+  azure_pipeline_delete_virtual_machine_scale_set = azure.pipeline.delete_virtual_machine_scale_set
 }
