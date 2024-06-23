@@ -29,7 +29,7 @@ locals {
 trigger "query" "detect_and_delete_network_load_balancers_if_unused" {
   title         = "Detect & delete Network Load Balancers if unused"
   description   = "Detects unused Network Load Balancers and runs your chosen action."
-  // documentation = file("./network/docs/detect_and_delete_network_load_balancers_if_unused.md")
+  documentation = file("./compute/docs/detect_and_delete_network_load_balancers_if_unused_trigger.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   enabled  = var.network_load_balancers_if_unused_trigger_enabled
@@ -48,7 +48,7 @@ trigger "query" "detect_and_delete_network_load_balancers_if_unused" {
 pipeline "detect_and_delete_network_load_balancers_if_unused" {
   title         = "Detect & delete Network Load Balancers if unused"
   description   = "Detects unused Network Load Balancers and runs your chosen action."
-  // documentation = file("./network/docs/detect_and_delete_network_load_balancers_if_unused.md")
+  documentation = file("./compute/docs/detect_and_delete_network_load_balancers_if_unused.md")
   tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -108,7 +108,7 @@ pipeline "detect_and_delete_network_load_balancers_if_unused" {
 pipeline "delete_network_load_balancers_if_unused" {
   title         = "Delete Network Load Balancers if unused"
   description   = "Runs corrective action on a collection of Network Load Balancers which are unused."
-  // documentation = file("./network/docs/delete_network_load_balancers_if_unused.md")
+  documentation = file("./compute/docs/delete_network_load_balancers_if_unused.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "items" {
@@ -185,7 +185,7 @@ pipeline "delete_network_load_balancers_if_unused" {
 pipeline "delete_one_network_load_balancer_if_unused" {
   title         = "Delete one Network Load Balancer if unused"
   description   = "Runs corrective action on a single Network Load Balancer which is unused."
-  // documentation = file("./network/docs/delete_one_network_load_balancer_if_unused.md")
+  documentation = file("./compute/docs/delete_one_network_load_balancer_if_unused.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "title" {

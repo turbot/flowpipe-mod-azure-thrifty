@@ -305,7 +305,7 @@ variable "virtual_machine_scale_sets_if_unused_trigger_schedule" {
 variable "virtual_machine_scale_sets_if_unused_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
-  default     = "delete"
+  default     = "notify"
 }
 
 variable "virtual_machine_scale_sets_if_unused_enabled_actions" {
