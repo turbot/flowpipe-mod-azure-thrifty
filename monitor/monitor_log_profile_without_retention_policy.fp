@@ -1,45 +1,43 @@
 locals {
-  app_service_plans_if_unused = <<-EOQ
-    select
-      concat(asp.id, ' [', asp.resource_group, '/', asp.subscription_id, ']') as title,
-      asp.id as id,
-      asp.name,
-      asp.resource_group,
-      asp.subscription_id,
-      asp._ctx ->> 'connection_name' as cred
-    from
-      azure_app_service_plan as asp
-      left join azure_subscription as sub on sub.subscription_id = asp.subscription_id
-    where
-      apps is null
-			-- and sku_tier <> 'Free';
+  monitor_log_profiles_without_retention_policy_query = <<-EOQ
+  select
+    concat(lp.id, ' [', sub.subscription_id, ']') as title,
+    lp.name,
+    lp.subscription_id,
+    lp.title,
+    lp._ctx ->> 'connection_name' as cred
+  from
+    azure_log_profile as lp
+    left join azure_subscription as sub on lp.subscription_id = sub.subscription_id
+  where
+    lp.retention_policy ->> 'enabled' <> 'true'
   EOQ
 }
 
-trigger "query" "detect_and_delete_app_service_plans_if_unused" {
-  title         = "Detect & delete App Service Plans if unused"
-  description   = "Detects unused App Service Plans and runs your chosen action."
-  documentation = file("./appservice/docs/detect_and_delete_app_service_plans_if_unused_trigger.md")
-  tags          = merge(local.appservice_common_tags, { class = "unused" })
+trigger "query" "detect_and_correct_monitor_log_profiles_without_retention_policy" {
+  title         = "Detect & correct Monitor Log Profiles without retention policy"
+  description   = "Detects Monitor Log Profiles without retention policy and runs your chosen action."
+  documentation = file("./monitor/docs/detect_and_correct_monitor_log_profiles_without_retention_policy_trigger.md")
+  tags          = merge(local.monitor_common_tags, { class = "unused" })
 
-  enabled  = var.app_service_plans_if_unused_trigger_enabled
-  schedule = var.app_service_plans_if_unused_trigger_schedule
+  enabled  = var.monitor_log_profiles_without_retention_policy_trigger_enabled
+  schedule = var.monitor_log_profiles_without_retention_policy_trigger_schedule
   database = var.database
-  sql      = local.app_service_plans_if_unused
+  sql      = local.monitor_log_profiles_without_retention_policy_query
 
   capture "insert" {
-    pipeline = pipeline.delete_app_service_plans_if_unused
+    pipeline = pipeline.correct_monitor_log_profiles_without_retention_policy
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_delete_app_service_plans_if_unused" {
-  title         = "Detect & delete App Service Plans if unused"
-  description   = "Detects unused App Service Plans and runs your chosen action."
-  documentation = file("./appservice/docs/detect_and_delete_app_service_plans_if_unused.md")
-  tags          = merge(local.appservice_common_tags, { class = "unused", type = "featured" })
+pipeline "detect_and_correct_monitor_log_profiles_without_retention_policy" {
+  title         = "Detect & correct Monitor Log Profiles without retention policy"
+  description   = "Detects Monitor Log Profiles without retention policy and runs your chosen action."
+  documentation = file("./monitor/docs/detect_and_correct_monitor_log_profiles_without_retention_policy.md")
+  tags          = merge(local.monitor_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
     type        = string
@@ -68,22 +66,22 @@ pipeline "detect_and_delete_app_service_plans_if_unused" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.app_service_plans_if_unused_default_action
+    default     = var.monitor_log_profiles_without_retention_policy_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.app_service_plans_if_unused_enabled_actions
+    default     = var.monitor_log_profiles_without_retention_policy_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.app_service_plans_if_unused
+    sql      = local.monitor_log_profiles_without_retention_policy_query
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.delete_app_service_plans_if_unused
+    pipeline = pipeline.correct_monitor_log_profiles_without_retention_policy
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -95,18 +93,16 @@ pipeline "detect_and_delete_app_service_plans_if_unused" {
   }
 }
 
-pipeline "delete_app_service_plans_if_unused" {
-  title         = "Delete App Service Plans if unused"
-  description   = "Runs corrective action on a collection of App Service Plans which are unused."
-  documentation = file("./appservice/docs/delete_app_service_plans_if_unused.md")
-  tags          = merge(local.appservice_common_tags, { class = "unused" })
+pipeline "correct_monitor_log_profiles_without_retention_policy" {
+  title         = "Correct Monitor Log Profiles without retention policy"
+  description   = "Runs corrective action on a collection of Monitor Log Profiles without retention policy."
+  documentation = file("./monitor/docs/correct_monitor_log_profiles_without_retention_policy.md")
+  tags          = merge(local.monitor_common_tags, { class = "unused" })
 
   param "items" {
     type = list(object({
-      id              = string
       title           = string
       name            = string
-      resource_group  = string
       subscription_id = string
       cred            = string
     }))
@@ -134,35 +130,34 @@ pipeline "delete_app_service_plans_if_unused" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.app_service_plans_if_unused_default_action
+    default     = var.monitor_log_profiles_without_retention_policy_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.app_service_plans_if_unused_enabled_actions
+    default     = var.monitor_log_profiles_without_retention_policy_enabled_actions
   }
 
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} unused App Service Plans."
+    text     = "Detected ${length(param.items)} Monitor Log Profiles without retention policy."
   }
 
   step "transform" "items_by_id" {
-    value = { for row in param.items : row.id => row }
+    value = { for row in param.items : row.name => row }
   }
 
-  step "pipeline" "delete_item" {
+  step "pipeline" "correct_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.delete_one_app_service_plan_if_unused
+    pipeline        = pipeline.correct_one_monitor_log_profile_without_retention_policy
     args = {
       title              = each.value.title
-      cred               = each.value.cred
-      resource_group     = each.value.resource_group
-      subscription_id    = each.value.subscription_id
       name               = each.value.name
+      subscription_id    = each.value.subscription_id
+      cred               = each.value.cred
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -172,11 +167,11 @@ pipeline "delete_app_service_plans_if_unused" {
   }
 }
 
-pipeline "delete_one_app_service_plan_if_unused" {
-  title         = "Delete one App Service Plan if unused"
-  description   = "Runs corrective action on a single App Service Plan which is unused."
-  documentation = file("./appservice/docs/delete_one_app_service_plan_if_unused.md")
-  tags          = merge(local.appservice_common_tags, { class = "unused" })
+pipeline "correct_one_monitor_log_profile_without_retention_policy" {
+  title         = "Correct one Monitor Log Profile without retention policy"
+  description   = "Runs corrective action on a Monitor Log Profile without retention policy."
+  documentation = file("./monitor/docs/correct_one_monitor_log_profile_without_retention_policy.md")
+  tags          = merge(local.monitor_common_tags, { class = "unused" })
 
   param "title" {
     type        = string
@@ -185,12 +180,7 @@ pipeline "delete_one_app_service_plan_if_unused" {
 
   param "name" {
     type        = string
-    description = "The name of the App Service Plan."
-  }
-
-  param "resource_group" {
-    type        = string
-    description = local.description_resource_group
+    description = "The name of the Monitor Log Profile."
   }
 
   param "subscription_id" {
@@ -201,7 +191,6 @@ pipeline "delete_one_app_service_plan_if_unused" {
   param "cred" {
     type        = string
     description = local.description_credential
-    default     = "default"
   }
 
   param "notifier" {
@@ -225,13 +214,13 @@ pipeline "delete_one_app_service_plan_if_unused" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.app_service_plans_if_unused_default_action
+    default     = var.monitor_log_profiles_without_retention_policy_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.app_service_plans_if_unused_enabled_actions
+    default     = var.monitor_log_profiles_without_retention_policy_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -240,7 +229,7 @@ pipeline "delete_one_app_service_plan_if_unused" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected unused App Service Plan ${param.title}."
+      detect_msg         = "Detected Monitor Log Profile ${param.title} without retention policy."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -252,50 +241,52 @@ pipeline "delete_one_app_service_plan_if_unused" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped App Service Plan ${param.title}."
+            text     = "Skipped Monitor Log Profile ${param.title} without retention policy."
           }
           success_msg = ""
           error_msg   = ""
         },
-        "delete" = {
-          label        = "Delete App Service Plan"
-          value        = "delete"
+        "enable_log_profile_retention" = {
+          label        = "Enable Log Profile Retention"
+          value        = "enable_log_profile_retention"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_app_service_plan
+          pipeline_ref = local.azure_pipeline_update_monitor_log_profile_retention_policy
           pipeline_args = {
-            service_plan_name = param.name
-            resource_group    = param.resource_group
+            log_profile_name  = param.name
             subscription_id   = param.subscription_id
+            retention_enabled = true
+            location          = "global"
+            retention_days    = 365
             cred              = param.cred
           }
-          success_msg = "Deleted App Service Plan ${param.title}."
-          error_msg   = "Error deleting App Service Plan ${param.title}."
+          success_msg = "Updated Monitor Log Profile ${param.title}."
+          error_msg   = "Error updating Monitor Log Profile ${param.title}."
         }
       }
     }
   }
 }
 
-variable "app_service_plans_if_unused_trigger_enabled" {
+variable "monitor_log_profiles_without_retention_policy_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "app_service_plans_if_unused_trigger_schedule" {
+variable "monitor_log_profiles_without_retention_policy_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
 }
 
-variable "app_service_plans_if_unused_default_action" {
+variable "monitor_log_profiles_without_retention_policy_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
-  default     = "delete"
+  default     = "enable_log_profile_retention"
 }
 
-variable "app_service_plans_if_unused_enabled_actions" {
+variable "monitor_log_profiles_without_retention_policy_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete"]
+  default     = ["skip", "enable_log_profile_retention"]
 }

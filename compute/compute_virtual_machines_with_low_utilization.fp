@@ -100,7 +100,7 @@ locals {
 trigger "query" "detect_and_correct_compute_virtual_machines_with_low_utilization" {
   title         = "Detect & correct compute virtual machine with low utilization"
   description   = "Detects compute virtual machines with low utilization and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_correct_compute_virtual_machines_with_low_utilization_trigger.md")
+  // documentation = file("./compute/docs/detect_and_correct_compute_virtual_machines_with_low_utilization_trigger.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   enabled  = var.compute_virtual_machines_with_low_utilization_trigger_enabled
@@ -119,7 +119,7 @@ trigger "query" "detect_and_correct_compute_virtual_machines_with_low_utilizatio
 pipeline "detect_and_correct_compute_virtual_machines_with_low_utilization" {
   title         = "Detect & correct compute virtual machines with low utilization"
   description   = "Detects compute virtual machines with low utilization and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_correct_compute_virtual_machines_with_low_utilization.md")
+  // documentation = file("./compute/docs/detect_and_correct_compute_virtual_machines_with_low_utilization.md")
   tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -179,7 +179,7 @@ pipeline "detect_and_correct_compute_virtual_machines_with_low_utilization" {
 pipeline "correct_compute_virtual_machines_with_low_utilization" {
   title         = "Correct compute virtual machines with low utilization"
   description   = "Corrects compute virtual machines with low utilization based on the chosen action."
-  documentation = file("./compute/docs/correct_compute_virtual_machines_with_low_utilization.md")
+  // documentation = file("./compute/docs/correct_compute_virtual_machines_with_low_utilization.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "items" {
@@ -236,7 +236,7 @@ pipeline "correct_compute_virtual_machines_with_low_utilization" {
   step "pipeline" "correct_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.correct_one_compute virtual machine_with_low_utilization
+    pipeline        = pipeline.correct_one_compute_virtual_machine_with_low_utilization
     args = {
       title              = each.value.title
       instance_id        = each.value.instance_id
@@ -253,7 +253,7 @@ pipeline "correct_compute_virtual_machines_with_low_utilization" {
   }
 }
 
-pipeline "correct_one_compute virtual machine_with_low_utilization" {
+pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
   title         = "Correct one compute virtual machine with low utilization"
   description   = "Runs corrective action on a single compute virtual machine with low utilization."
   // documentation = file("./compute/docs/correct_one_compute virtual machine_with_low_utilization.md")
@@ -281,7 +281,7 @@ pipeline "correct_one_compute virtual machine_with_low_utilization" {
 
   param "region" {
     type        = string
-    description = local.description_region
+    description = "The region of the compute virtual machine."
   }
 
   param "cred" {
@@ -416,7 +416,7 @@ variable "compute_virtual_machines_with_low_utilization_enabled_actions" {
   default     = ["skip", "stop_instance", "downgrade_instance_type"]
 }
 
-pipeline "mock_update_compute virtual machine_type" {
+pipeline "mock_update_compute_virtual_machine_type" {
   param "instance_id" {
     type = string
   }
