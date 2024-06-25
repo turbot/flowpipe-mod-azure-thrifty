@@ -47,8 +47,8 @@ locals {
   azure_pipeline_resize_compute_virtual_machine              = azure.pipeline.resize_compute_virtual_machine
   azure_pipeline_update_monitor_log_profile_retention_policy = azure.pipeline.update_monitor_log_profile_retention_policy
   azure_pipeline_delete_compute_disk                         = azure.pipeline.delete_compute_disk
-  azure_pipeline_delete_network_public_ip                    = azure.pipeline.delete_network_public_ips
-  azure_pipeline_delete_compute_virtual_network_gateway      = azure.pipeline.delete_compute_virtual_network_gateway
+  azure_pipeline_delete_network_public_ip                    = azure.pipeline.delete_network_public_ip
+  azure_pipeline_delete_network_virtual_network_gateway      = azure.pipeline.delete_network_virtual_network_gateway
   azure_pipeline_delete_compute_virtual_machine              = azure.pipeline.delete_compute_virtual_machine
   azure_pipeline_delete_storage_account                      = azure.pipeline.delete_storage_account
 }

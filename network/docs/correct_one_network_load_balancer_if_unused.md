@@ -1,4 +1,4 @@
-# Delete one Network load balancer if unused
+# Correct one Network load balancer if unused
 
 ## Overview
 

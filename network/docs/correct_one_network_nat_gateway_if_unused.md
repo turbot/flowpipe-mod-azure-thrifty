@@ -1,8 +1,8 @@
-# Corect one Virtual NAT gateways if unused
+# Corect one Network NAT gateways if unused
 
 ## Overview
 
-Azure Virtual NAT gateways with no subnets attached still cost money and should be deleted.
+Azure Network NAT gateways with no subnets attached still cost money and should be deleted.
 
 This pipeline allows you to specify a collection of Network load balancers and either sends notifications or attempts to perform predefined corrective actions upon the collection.
 

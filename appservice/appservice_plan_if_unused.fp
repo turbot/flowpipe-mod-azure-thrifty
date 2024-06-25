@@ -12,14 +12,14 @@ locals {
       left join azure_subscription as sub on sub.subscription_id = asp.subscription_id
     where
       apps is null
-			-- and sku_tier <> 'Free';
+			and sku_tier <> 'Free';
   EOQ
 }
 
-trigger "query" "detect_and_delete_app_service_plans_if_unused" {
-  title         = "Detect & delete App Service Plans if unused"
+trigger "query" "detect_and_correct_app_service_plans_if_unused" {
+  title         = "Detect & correct App Service Plans if unused"
   description   = "Detects unused App Service Plans and runs your chosen action."
-  documentation = file("./appservice/docs/detect_and_delete_app_service_plans_if_unused_trigger.md")
+  documentation = file("./appservice/docs/detect_and_correct_app_service_plans_if_unused_trigger.md")
   tags          = merge(local.appservice_common_tags, { class = "unused" })
 
   enabled  = var.app_service_plans_if_unused_trigger_enabled
@@ -28,17 +28,17 @@ trigger "query" "detect_and_delete_app_service_plans_if_unused" {
   sql      = local.app_service_plans_if_unused
 
   capture "insert" {
-    pipeline = pipeline.delete_app_service_plans_if_unused
+    pipeline = pipeline.correct_app_service_plans_if_unused
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_delete_app_service_plans_if_unused" {
-  title         = "Detect & delete App Service Plans if unused"
+pipeline "detect_and_correct_app_service_plans_if_unused" {
+  title         = "Detect & correct App Service Plans if unused"
   description   = "Detects unused App Service Plans and runs your chosen action."
-  documentation = file("./appservice/docs/detect_and_delete_app_service_plans_if_unused.md")
+  documentation = file("./appservice/docs/detect_and_correct_app_service_plans_if_unused.md")
   tags          = merge(local.appservice_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -83,7 +83,7 @@ pipeline "detect_and_delete_app_service_plans_if_unused" {
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.delete_app_service_plans_if_unused
+    pipeline = pipeline.correct_app_service_plans_if_unused
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -95,10 +95,10 @@ pipeline "detect_and_delete_app_service_plans_if_unused" {
   }
 }
 
-pipeline "delete_app_service_plans_if_unused" {
-  title         = "Delete App Service Plans if unused"
+pipeline "correct_app_service_plans_if_unused" {
+  title         = "Correct App Service Plans if unused"
   description   = "Runs corrective action on a collection of App Service Plans which are unused."
-  documentation = file("./appservice/docs/delete_app_service_plans_if_unused.md")
+  documentation = file("./appservice/docs/correct_app_service_plans_if_unused.md")
   tags          = merge(local.appservice_common_tags, { class = "unused" })
 
   param "items" {
@@ -153,10 +153,10 @@ pipeline "delete_app_service_plans_if_unused" {
     value = { for row in param.items : row.id => row }
   }
 
-  step "pipeline" "delete_item" {
+  step "pipeline" "correct_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.delete_one_app_service_plan_if_unused
+    pipeline        = pipeline.correct_one_app_service_plan_if_unused
     args = {
       title              = each.value.title
       cred               = each.value.cred
@@ -172,10 +172,10 @@ pipeline "delete_app_service_plans_if_unused" {
   }
 }
 
-pipeline "delete_one_app_service_plan_if_unused" {
-  title         = "Delete one App Service Plan if unused"
+pipeline "correct_one_app_service_plan_if_unused" {
+  title         = "Correct one App Service Plan if unused"
   description   = "Runs corrective action on a single App Service Plan which is unused."
-  documentation = file("./appservice/docs/delete_one_app_service_plan_if_unused.md")
+  documentation = file("./appservice/docs/correct_one_app_service_plan_if_unused.md")
   tags          = merge(local.appservice_common_tags, { class = "unused" })
 
   param "title" {
@@ -257,9 +257,9 @@ pipeline "delete_one_app_service_plan_if_unused" {
           success_msg = ""
           error_msg   = ""
         },
-        "delete" = {
+        "delete_app_service_plan" = {
           label        = "Delete App Service Plan"
-          value        = "delete"
+          value        = "delete_app_service_plan"
           style        = local.style_alert
           pipeline_ref = local.azure_pipeline_delete_app_service_plan
           pipeline_args = {
@@ -291,11 +291,11 @@ variable "app_service_plans_if_unused_trigger_schedule" {
 variable "app_service_plans_if_unused_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
-  default     = "delete"
+  default     = "delete_app_service_plan"
 }
 
 variable "app_service_plans_if_unused_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete"]
+  default     = ["skip", "delete_app_service_plan"]
 }

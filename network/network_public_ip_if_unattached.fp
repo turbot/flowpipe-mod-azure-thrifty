@@ -1,7 +1,7 @@
 locals {
   network_public_ip_unattached_query = <<-EOQ
   select
-    ip.id as resource,
+    concat(ip.id, ' [', ip.resource_group, '/', ip.subscription_id, ']') as resource,
     ip.name,
     ip.subscription_id,
     ip.resource_group,
@@ -15,10 +15,10 @@ locals {
   EOQ
 }
 
-trigger "query" "detect_and_correct_public_ip_unattached" {
+trigger "query" "detect_and_correct_network_public_ip_unattached" {
   title         = "Detect & correct Network unattached public IPs"
   description   = "Detects unattached Network public IPs and runs your chosen action."
-  documentation = file("./network/docs/detect_and_correct_public_ip_unattached_trigger.md")
+  documentation = file("./network/docs/detect_and_correct_network_public_ip_unattached_trigger.md")
   tags          = merge(local.network_common_tags, { class = "unused" })
 
   enabled  = var.network_public_ip_unattached_trigger_enabled
@@ -34,10 +34,10 @@ trigger "query" "detect_and_correct_public_ip_unattached" {
   }
 }
 
-pipeline "detect_and_correct_public_ip_unattached" {
+pipeline "detect_and_correct_network_public_ip_unattached" {
   title         = "Detect & correct Network unattached public IPs"
   description   = "Detects unattached Network public IPs and runs your chosen action."
-  documentation = file("./network/docs/detect_and_correct_public_ip_unattached.md")
+  documentation = file("./network/docs/detect_and_correct_network_public_ip_unattached.md")
   tags          = merge(local.network_common_tags, { class = "unused", type = "featured" })
 
   param "database" {

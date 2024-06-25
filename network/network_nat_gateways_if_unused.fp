@@ -1,45 +1,45 @@
 locals {
-  virtual_network_gateways_if_unused = <<-EOQ
+  network_nat_gateways_if_unused = <<-EOQ
     select
-      concat(g.id, ' [', g.reosurce_group, '/', g.subscription_id) as title,
+      concat(g.id, ' [', g.resource_group, '/', g.subscription_id, ']') as title,
+			g.id as id,
       g.name,
       g.resource_group,
       g.subscription_id,
       g._ctx ->> 'connection_name' as cred
     from
-      azure_virtual_network_gateway as g,
+      azure_nat_gateway as g,
       azure_subscription as sub
     where
-      g.gateway_connections is null
-    and
-      sub.subscription_id = g.subscription_id;
+      subnets is null
+    	and sub.subscription_id = g.subscription_id;
   EOQ
 }
 
-trigger "query" "detect_and_correct_virtual_network_gateways_if_unused" {
-  title         = "Detect & correct Virtual network gateways if unused"
-  description   = "Detects unused Virtual network gateways and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_correct_virtual_network_gateways_if_unused.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+trigger "query" "detect_and_correct_network_nat_gateways_if_unused" {
+  title         = "Detect & correct Virtual NAT Gateways if unused"
+  description   = "Detects unused Virtual NAT Gateways and runs your chosen action."
+  documentation = file("./network/docs/detect_and_correct_network_nat_gateways_if_unused_trigger.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
-  enabled  = var.virtual_network_gateways_if_unused_trigger_enabled
-  schedule = var.virtual_network_gateways_if_unused_trigger_schedule
+  enabled  = var.network_nat_gateways_if_unused_trigger_enabled
+  schedule = var.network_nat_gateways_if_unused_trigger_schedule
   database = var.database
-  sql      = local.virtual_network_gateways_if_unused
+  sql      = local.network_nat_gateways_if_unused
 
   capture "insert" {
-    pipeline = pipeline.correct_virtual_network_gateways_if_unused
+    pipeline = pipeline.correct_network_nat_gateways_if_unused
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_correct_virtual_network_gateways_if_unused" {
-  title         = "Detect & correct Virtual network gateways if unused"
-  description   = "Detects unused network gateways and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_correct_virtual_network_gateways_if_unused.md")
-  tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
+pipeline "detect_and_correct_network_nat_gateways_if_unused" {
+  title         = "Detect & correct Network NAT Gateways if unused"
+  description   = "Detects unused NAT Gateways and runs your chosen action."
+  documentation = file("./network/docs/detect_and_correct_network_nat_gateways_if_unused.md")
+  tags          = merge(local.network_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
     type        = string
@@ -68,22 +68,22 @@ pipeline "detect_and_correct_virtual_network_gateways_if_unused" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.virtual_network_gateways_if_unused_default_action
+    default     = var.network_nat_gateways_if_unused_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.virtual_network_gateways_if_unused_enabled_actions
+    default     = var.network_nat_gateways_if_unused_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.virtual_network_gateways_if_unused
+    sql      = local.network_nat_gateways_if_unused
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.correct_virtual_network_gateways_if_unused
+    pipeline = pipeline.correct_network_nat_gateways_if_unused
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -95,14 +95,15 @@ pipeline "detect_and_correct_virtual_network_gateways_if_unused" {
   }
 }
 
-pipeline "correct_virtual_network_gateways_if_unused" {
-  title         = "Correct Virtual Network Gateways if unused"
-  description   = "Runs corrective action on a collection of Virtual Network Gateways which are unused."
-  documentation = file("./compute/docs/correct_virtual_network_gateways_if_unused.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+pipeline "correct_network_nat_gateways_if_unused" {
+  title         = "Correct Network NAT Gateways if unused"
+  description   = "Runs corrective action on a collection of Network NAT Gateways which are unused."
+  documentation = file("./network/docs/correct_network_nat_gateways_if_unused.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
   param "items" {
     type = list(object({
+			id              = string
       title           = string
       name            = string
       resource_group  = string
@@ -133,19 +134,19 @@ pipeline "correct_virtual_network_gateways_if_unused" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.virtual_network_gateways_if_unused_default_action
+    default     = var.network_nat_gateways_if_unused_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.virtual_network_gateways_if_unused_enabled_actions
+    default     = var.network_nat_gateways_if_unused_enabled_actions
   }
 
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} unused Virtual Network Gateways."
+    text     = "Detected ${length(param.items)} unused Network NAT Gateways."
   }
 
   step "transform" "items_by_id" {
@@ -155,12 +156,13 @@ pipeline "correct_virtual_network_gateways_if_unused" {
   step "pipeline" "correct_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.correct_one_virtual_network_gateway_if_unused
+    pipeline        = pipeline.correct_one_network_nat_gateway_if_unused
     args = {
       title              = each.value.title
-      id                 = each.value.id
-      region             = each.value.region
       cred               = each.value.cred
+			resource_group     = each.value.resource_group
+			subscription_id    = each.value.subscription_id
+			name               = each.value.name
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -170,11 +172,11 @@ pipeline "correct_virtual_network_gateways_if_unused" {
   }
 }
 
-pipeline "correct_one_virtual_network_gateway_if_unused" {
-  title         = "Correct one Virtual Network Gateways if unused"
-  description   = "Runs corrective action on a single Virtual Network Gateway which is unused."
-  documentation = file("./compute/docs/correct_one_virtual_network_gateway_if_unused.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+pipeline "correct_one_network_nat_gateway_if_unused" {
+  title         = "Correct one Network NAT Gateway if unused"
+  description   = "Runs corrective action on a single network NAT Gateway which is unused."
+  documentation = file("./network/docs/correct_one_network_nat_gateway_if_unused.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
   param "title" {
     type        = string
@@ -183,7 +185,7 @@ pipeline "correct_one_virtual_network_gateway_if_unused" {
 
   param "name" {
     type        = string
-    description = "The name of the Compute Network."
+    description = "The name of the Network NAT Gateway."
   }
 
   param "resource_group" {
@@ -199,6 +201,7 @@ pipeline "correct_one_virtual_network_gateway_if_unused" {
   param "cred" {
     type        = string
     description = local.description_credential
+		default     = "default"
   }
 
   param "notifier" {
@@ -222,13 +225,13 @@ pipeline "correct_one_virtual_network_gateway_if_unused" {
    param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.virtual_network_gateways_if_unused_default_action
+    default     = var.network_nat_gateways_if_unused_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.virtual_network_gateways_if_unused_enabled_actions
+    default     = var.network_nat_gateways_if_unused_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -237,7 +240,7 @@ pipeline "correct_one_virtual_network_gateway_if_unused" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected unused Network Gateways ${param.title}."
+      detect_msg         = "Detected unused Network NAT Gateway ${param.title}."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -249,50 +252,50 @@ pipeline "correct_one_virtual_network_gateway_if_unused" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Network Gateway ${param.title}."
+            text     = "Skipped Network NAT Gateway ${param.title}."
           }
           success_msg = ""
           error_msg   = ""
         },
-        "delete" = {
-          label        = "Delete Network Gateway"
-          value        = "delete"
+        "delete_nat_gateway" = {
+          label        = "Delete Network NAT Gateway"
+          value        = "delete_nat_gateway"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_compute_virtual_network_gateway
+          pipeline_ref = local.azure_pipeline_delete_network_nat_gateway
           pipeline_args = {
-            name            = param.name
+            gateway_name    = param.name
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
             cred            = param.cred
           }
-          success_msg = "Deleted Network Gateway ${param.title}."
-          error_msg   = "Error deleting Network Gateway ${param.title}."
+          success_msg = "Deleted Network NAT Gateway ${param.title}."
+          error_msg   = "Error deleting Network NAT Gateway ${param.title}."
         }
       }
     }
   }
 }
 
-variable "virtual_network_gateways_if_unused_trigger_enabled" {
+variable "network_nat_gateways_if_unused_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "virtual_network_gateways_if_unused_trigger_schedule" {
+variable "network_nat_gateways_if_unused_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
 }
 
-variable "virtual_network_gateways_if_unused_default_action" {
+variable "network_nat_gateways_if_unused_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
 }
 
-variable "virtual_network_gateways_if_unused_enabled_actions" {
+variable "network_nat_gateways_if_unused_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_snapshot"]
+  default     = ["skip", "delete_nat_gateway"]
 }

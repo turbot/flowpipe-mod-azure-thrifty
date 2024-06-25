@@ -26,11 +26,11 @@ locals {
   EOQ
 }
 
-trigger "query" "detect_and_delete_network_load_balancers_if_unused" {
-  title         = "Detect & delete Network Load Balancers if unused"
+trigger "query" "detect_and_correct_network_load_balancers_if_unused" {
+  title         = "Detect & correct Network Load Balancers if unused"
   description   = "Detects unused Network Load Balancers and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_delete_network_load_balancers_if_unused_trigger.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  documentation = file("./network/docs/detect_and_correct_network_load_balancers_if_unused_trigger.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
   enabled  = var.network_load_balancers_if_unused_trigger_enabled
   schedule = var.network_load_balancers_if_unused_trigger_schedule
@@ -38,18 +38,18 @@ trigger "query" "detect_and_delete_network_load_balancers_if_unused" {
   sql      = local.network_load_balancers_if_unused
 
   capture "insert" {
-    pipeline = pipeline.delete_network_load_balancers_if_unused
+    pipeline = pipeline.correct_network_load_balancers_if_unused
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_delete_network_load_balancers_if_unused" {
-  title         = "Detect & delete Network Load Balancers if unused"
+pipeline "detect_and_correct_network_load_balancers_if_unused" {
+  title         = "Detect & correct Network Load Balancers if unused"
   description   = "Detects unused Network Load Balancers and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_delete_network_load_balancers_if_unused.md")
-  tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
+  documentation = file("./network/docs/detect_and_correct_network_load_balancers_if_unused.md")
+  tags          = merge(local.network_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
     type        = string
@@ -93,7 +93,7 @@ pipeline "detect_and_delete_network_load_balancers_if_unused" {
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.delete_network_load_balancers_if_unused
+    pipeline = pipeline.correct_network_load_balancers_if_unused
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -105,11 +105,11 @@ pipeline "detect_and_delete_network_load_balancers_if_unused" {
   }
 }
 
-pipeline "delete_network_load_balancers_if_unused" {
-  title         = "Delete Network Load Balancers if unused"
+pipeline "correct_network_load_balancers_if_unused" {
+  title         = "Correct Network Load Balancers if unused"
   description   = "Runs corrective action on a collection of Network Load Balancers which are unused."
-  documentation = file("./compute/docs/delete_network_load_balancers_if_unused.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  documentation = file("./network/docs/correct_network_load_balancers_if_unused.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
   param "items" {
     type = list(object({
@@ -166,7 +166,7 @@ pipeline "delete_network_load_balancers_if_unused" {
   step "pipeline" "delete_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.delete_one_network_load_balancer_if_unused
+    pipeline        = pipeline.correct_one_network_load_balancer_if_unused
     args = {
       title              = each.value.title
       name               = each.value.name
@@ -182,11 +182,11 @@ pipeline "delete_network_load_balancers_if_unused" {
   }
 }
 
-pipeline "delete_one_network_load_balancer_if_unused" {
-  title         = "Delete one Network Load Balancer if unused"
+pipeline "correct_one_network_load_balancer_if_unused" {
+  title         = "Correct one Network Load Balancer if unused"
   description   = "Runs corrective action on a single Network Load Balancer which is unused."
-  documentation = file("./compute/docs/delete_one_network_load_balancer_if_unused.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  documentation = file("./network/docs/correct_one_network_load_balancer_if_unused.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
   param "title" {
     type        = string
@@ -267,9 +267,9 @@ pipeline "delete_one_network_load_balancer_if_unused" {
           success_msg = ""
           error_msg   = ""
         },
-        "delete" = {
+        "delete_lb" = {
           label        = "Delete Network Load Balancer"
-          value        = "delete"
+          value        = "delete_lb"
           style        = local.style_alert
           pipeline_ref = local.azure_pipeline_delete_network_load_balancer
           pipeline_args = {
@@ -307,5 +307,5 @@ variable "network_load_balancers_if_unused_default_action" {
 variable "network_load_balancers_if_unused_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete"]
+  default     = ["skip", "delete_lb"]
 }
