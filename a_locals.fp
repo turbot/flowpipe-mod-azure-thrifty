@@ -37,11 +37,18 @@ locals {
 
 // Pipeline References
 locals {
-  pipeline_optional_message                             = detect_correct.pipeline.optional_message
-  azure_pipeline_delete_compute_snapshot                = azure.pipeline.delete_compute_snapshot
-  azure_pipeline_delete_compute_disk                    = azure.pipeline.delete_compute_disk
-  azure_pipeline_delete_network_public_ip               = azure.pipeline.delete_network_public_ips
-  azure_pipeline_delete_compute_virtual_network_gateway = azure.pipeline.delete_compute_virtual_network_gateway
-  azure_pipeline_delete_compute_virtual_machine         = azure.pipeline.delete_compute_virtual_machine
-  azure_pipeline_delete_storage_account                 = azure.pipeline.delete_storage_account
+  pipeline_optional_message                                  = detect_correct.pipeline.optional_message
+  azure_pipeline_delete_compute_snapshot                     = azure.pipeline.delete_compute_snapshot
+  azure_pipeline_delete_network_nat_gateway                  = azure.pipeline.delete_network_nat_gateway
+  azure_pipeline_delete_network_load_balancer                = azure.pipeline.delete_network_load_balancer
+  azure_pipeline_delete_virtual_machine_scale_set            = azure.pipeline.delete_virtual_machine_scale_set
+  azure_pipeline_delete_app_service_plan                     = azure.pipeline.delete_app_service_plan
+  azure_pipeline_stop_compute_virtual_machine                = azure.pipeline.stop_compute_virtual_machine
+  azure_pipeline_resize_compute_virtual_machine              = azure.pipeline.resize_compute_virtual_machine
+  azure_pipeline_update_monitor_log_profile_retention_policy = azure.pipeline.update_monitor_log_profile_retention_policy
+  azure_pipeline_delete_compute_disk                         = azure.pipeline.delete_compute_disk
+  azure_pipeline_delete_network_public_ip                    = azure.pipeline.delete_network_public_ips
+  azure_pipeline_delete_compute_virtual_network_gateway      = azure.pipeline.delete_compute_virtual_network_gateway
+  azure_pipeline_delete_compute_virtual_machine              = azure.pipeline.delete_compute_virtual_machine
+  azure_pipeline_delete_storage_account                      = azure.pipeline.delete_storage_account
 }
