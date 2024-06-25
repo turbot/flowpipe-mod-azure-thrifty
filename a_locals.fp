@@ -42,4 +42,5 @@ locals {
   azure_pipeline_delete_compute_disk                    = azure.pipeline.delete_compute_disk
   azure_pipeline_delete_network_public_ip               = azure.pipeline.delete_network_public_ips
   azure_pipeline_delete_compute_virtual_network_gateway = azure.pipeline.delete_compute_virtual_network_gateway
+  azure_pipeline_delete_compute_virtual_machine         = azure.pipeline.delete_compute_virtual_machine
 }
