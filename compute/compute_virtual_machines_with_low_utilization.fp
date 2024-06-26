@@ -11,7 +11,7 @@ locals {
       date_part('day', now() - timestamp) <= 30
     group by
       name
-    having max(average) < 20
+    having max(average) < 40
   ), compute_virtual_machine_current as (
     select
       i.title,
@@ -81,7 +81,10 @@ locals {
   select
     concat(id,' (', title, ') [', size, '/', region, '/', resource_group, ']') as title,
     id,
+    name as vm_name,
     size as current_type,
+    resource_group,
+    subscription_id,
     coalesce((
       select name
       from ranked_families fd
@@ -184,12 +187,15 @@ pipeline "correct_compute_virtual_machines_with_low_utilization" {
 
   param "items" {
     type = list(object({
-      title          = string
-      instance_id    = string
-      current_type   = string
-      suggested_type = string
-      region         = string
-      cred           = string
+      title           = string
+      id              = string
+      vm_name         = string
+      current_type    = string
+      suggested_type  = string
+      region          = string
+      resource_group  = string
+      subscription_id = string
+      cred            = string
     }))
   }
 
@@ -230,7 +236,7 @@ pipeline "correct_compute_virtual_machines_with_low_utilization" {
   }
 
   step "transform" "items_by_id" {
-    value = { for row in param.items : row.instance_id => row }
+    value = { for row in param.items : row.id => row }
   }
 
   step "pipeline" "correct_item" {
@@ -239,9 +245,12 @@ pipeline "correct_compute_virtual_machines_with_low_utilization" {
     pipeline        = pipeline.correct_one_compute_virtual_machine_with_low_utilization
     args = {
       title              = each.value.title
-      instance_id        = each.value.instance_id
+      id                 = each.value.id
       current_type       = each.value.current_type
       suggested_type     = each.value.suggested_type
+      resource_group     = each.value.resource_group
+      subscription_id    = each.value.subscription_id
+      vm_name            = each.value.vm_name
       region             = each.value.region
       cred               = each.value.cred
       notifier           = param.notifier
@@ -264,9 +273,24 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
     description = local.description_title
   }
 
-  param "instance_id" {
+  param "id" {
     type        = string
     description = "The ID of the compute virtual machine."
+  }
+
+  param "resource_group" {
+    type        = string
+    description = local.description_resource_group
+  }
+
+  param "subscription_id" {
+    type        = string
+    description = local.description_subscription_id
+  }
+
+  param "vm_name" {
+    type        = string
+    description = "The name of ompute virtual machine."
   }
 
   param "current_type" {
@@ -334,18 +358,19 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
         success_msg = "Skipping compute virtual machine ${param.title}."
         error_msg   = "Error skipping compute virtual machine ${param.title}."
       },
-      "stop_instance" = {
-        label        = "Stop Instance"
-        value        = "stop_instance"
+      "stop_virtual_machine" = {
+        label        = "Stop virtual_machine"
+        value        = "stop_virtual_machine"
         style        = local.style_alert
         pipeline_ref = local.azure_pipeline_stop_compute_virtual_machine
         pipeline_args = {
-          instance_ids = [param.instance_id]
-          region       = param.region
-          cred         = param.cred
+          vm_name         = param.vm_name
+          resource_group  = param.resource_group
+          subscription_id = param.subscription_id
+          cred            = param.cred
         }
-        success_msg = "Stopped compute virtual machine ${param.title}."
-        error_msg   = "Error stopping compute virtual machine ${param.title}."
+        success_msg = "Stopped Compute virtual_machine ${param.title}."
+        error_msg   = "Error stoping Compute virtual_machine ${param.title}."
       }
     }
   }
@@ -360,10 +385,11 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
           style        = local.style_ok
           pipeline_ref = local.azure_pipeline_stop_compute_virtual_machine
           pipeline_args = {
-            instance_id   = param.instance_id
-            instance_type = param.suggested_type
-            region        = param.region
-            cred          = param.cred
+            vm_name         = param.vm_name
+            resource_group  = param.resource_group
+            subscription_id = param.subscription_id
+            new_size        = param.suggested_type
+            cred            = param.cred
           }
           success_msg = "Downgraded compute virtual machine ${param.title} from ${param.current_type} to ${param.suggested_type}."
           error_msg   = "Error downgrading compute virtual machine ${param.title} type to ${param.suggested_type}."
@@ -407,17 +433,17 @@ variable "compute_virtual_machines_with_low_utilization_trigger_schedule" {
 variable "compute_virtual_machines_with_low_utilization_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
-  default     = "notify"
+  default     = "stop_virtual_machine"
 }
 
 variable "compute_virtual_machines_with_low_utilization_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "stop_instance", "downgrade_instance_type"]
+  default     = ["skip", "stop_virtual_machine", "downgrade_instance_type"]
 }
 
 pipeline "mock_update_compute_virtual_machine_type" {
-  param "instance_id" {
+  param "id" {
     type = string
   }
 
