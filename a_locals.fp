@@ -52,4 +52,5 @@ locals {
   azure_pipeline_delete_compute_virtual_machine              = azure.pipeline.delete_compute_virtual_machine
   azure_pipeline_delete_storage_account                      = azure.pipeline.delete_storage_account
   azure_pipeline_detach_compute_disk                         = azure.pipeline.detach_compute_disk
+  azure_pipeline_update_compute_snapshot                     = azure.pipeline.update_compute_snapshot
 }
