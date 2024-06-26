@@ -1,10 +1,11 @@
 locals {
-  compute_disks_unattchced_query = <<-EOQ
+  compute_disks_if_unattached_query = <<-EOQ
   select
     concat(d.id, ' [', d.resource_group, '/', d.subscription_id, ']') as title,
     d.name,
     d.resource_group,
     d.subscription_id,
+    d.name || to_char(current_date, 'YYYYMMDD') as snapshot_name,
     d._ctx ->> 'connection_name' as cred
   from
     azure_compute_disk as d,
@@ -16,29 +17,29 @@ locals {
   EOQ
 }
 
-trigger "query" "detect_and_correct_disks_unattached" {
+trigger "query" "detect_and_correct_compute_disks_if_unattached" {
   title         = "Detect & correct Compute unattached disks"
   description   = "Detects Compute disks unattached and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_correct_disks_unattached_trigger.md")
+  documentation = file("./compute/docs/detect_and_correct_compute_disks_if_unattached_trigger.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
-  enabled  = var.compute_disks_unattached_trigger_enabled
-  schedule = var.compute_disks_unattached_trigger_schedule
+  enabled  = var.compute_disks_if_unattached_trigger_enabled
+  schedule = var.compute_disks_if_unattached_trigger_schedule
   database = var.database
-  sql      = local.compute_disks_unattchced_query
+  sql      = local.compute_disks_if_unattached_query
 
   capture "insert" {
-    pipeline = pipeline.correct_compute_disks_unattchced
+    pipeline = pipeline.correct_compute_disks_if_unattached
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_correct_disks_unattached" {
+pipeline "detect_and_correct_compute_disks_if_unattached" {
   title         = "Detect & correct Compute disks unattached"
   description   = "Detects Compute disks unatatched and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_correct_disks_unattached.md")
+  documentation = file("./compute/docs/detect_and_correct_compute_disks_if_unattached.md")
   tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -68,22 +69,22 @@ pipeline "detect_and_correct_disks_unattached" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_disks_unattached_default_action
+    default     = var.compute_disks_if_unattached_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_disks_unattached_enabled_actions
+    default     = var.compute_disks_if_unattached_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.compute_disks_unattchced_query
+    sql      = local.compute_disks_if_unattached_query
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.correct_compute_disks_unattchced
+    pipeline = pipeline.correct_compute_disks_if_unattached
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -95,10 +96,10 @@ pipeline "detect_and_correct_disks_unattached" {
   }
 }
 
-pipeline "correct_compute_disks_unattchced" {
+pipeline "correct_compute_disks_if_unattached" {
   title         = "Correct Compute unattached disks"
   description   = "Runs corrective action on a collection of Compute unattached disks."
-  documentation = file("./compute/docs/correct_compute_disks_unattchced.md")
+  documentation = file("./compute/docs/correct_compute_disks_if_unattached.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "items" {
@@ -106,6 +107,7 @@ pipeline "correct_compute_disks_unattchced" {
       title           = string
       name            = string
       resource_group  = string
+      snapshot_name   = string
       subscription_id = string
       cred            = string
     }))
@@ -133,13 +135,13 @@ pipeline "correct_compute_disks_unattchced" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_disks_unattached_default_action
+    default     = var.compute_disks_if_unattached_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_disks_unattached_enabled_actions
+    default     = var.compute_disks_if_unattached_enabled_actions
   }
 
   step "message" "notify_detection_count" {
@@ -149,17 +151,18 @@ pipeline "correct_compute_disks_unattchced" {
   }
 
   step "transform" "items_by_id" {
-    value = { for row in param.items : row.name => row }
+    value = { for row in param.items : row.title => row }
   }
 
   step "pipeline" "correct_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.correct_one_compute_disks_unattached
+    pipeline        = pipeline.correct_one_compute_disks_if_unattached
     args = {
       title              = each.value.title
       name               = each.value.name
       resource_group     = each.value.resource_group
+      snapshot_name      = each.value.snapshot_name
       subscription_id    = each.value.subscription_id
       cred               = each.value.cred
       notifier           = param.notifier
@@ -171,10 +174,10 @@ pipeline "correct_compute_disks_unattchced" {
   }
 }
 
-pipeline "correct_one_compute_disks_unattached" {
+pipeline "correct_one_compute_disks_if_unattached" {
   title         = "Correct one Compute disk unattached"
   description   = "Runs corrective action on an Compute disk unattached."
-  documentation = file("./compute/docs/correct_one_compute_disks_unattached.md")
+  documentation = file("./compute/docs/correct_one_compute_disks_if_unattached.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "title" {
@@ -190,6 +193,11 @@ pipeline "correct_one_compute_disks_unattached" {
   param "resource_group" {
     type        = string
     description = local.description_resource_group
+  }
+
+  param "snapshot_name" {
+    type        = string
+    description = "The snapshot name of the disk."
   }
 
   param "subscription_id" {
@@ -223,13 +231,13 @@ pipeline "correct_one_compute_disks_unattached" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_disks_unattached_default_action
+    default     = var.compute_disks_if_unattached_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_disks_unattached_enabled_actions
+    default     = var.compute_disks_if_unattached_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -269,31 +277,103 @@ pipeline "correct_one_compute_disks_unattached" {
           success_msg = "Deleted Compute disk ${param.title}."
           error_msg   = "Error deleting Compute disk ${param.title}."
         }
+        "snapshot_and_delete_disk" = {
+          label        = "Snapshot & Delete Disk"
+          value        = "snapshot_and_delete_disk"
+          style        = local.style_alert
+          pipeline_ref = pipeline.snapshand_and_delete_compute_disk
+          pipeline_args = {
+            disk_name       = param.name
+            resource_group  = param.resource_group
+            subscription_id = param.subscription_id
+            cred            = param.cred
+            snapshot_name   = param.snapshot_name
+          }
+          success_msg = "Deleted Compute disk ${param.title}."
+          error_msg   = "Error deleting Compute disk ${param.title}."
+        }
       }
     }
   }
 }
 
-variable "compute_disks_unattached_trigger_enabled" {
+variable "compute_disks_if_unattached_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "compute_disks_unattached_trigger_schedule" {
+variable "compute_disks_if_unattached_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
 }
 
-variable "compute_disks_unattached_default_action" {
+variable "compute_disks_if_unattached_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
-  default     = "notify"
+  default     = "snapshot_and_delete_disk"
 }
 
-variable "compute_disks_unattached_enabled_actions" {
+variable "compute_disks_if_unattached_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_disk"]
+  default     = ["skip", "delete_disk", "snapshot_and_delete_disk"]
+}
+
+pipeline "snapshand_and_delete_compute_disk" {
+  title       = "Delete Compute Disk"
+  description = "Delete a managed disk."
+
+  param "cred" {
+    type        = string
+    description = local.description_credential
+    default     = "azure"
+  }
+
+  param "subscription_id" {
+    type        = string
+    description = local.description_subscription_id
+  }
+
+  param "resource_group" {
+    type        = string
+    description = local.description_resource_group
+  }
+
+  param "snapshot_name" {
+    type        = string
+    description = "The name of the snapshot."
+  }
+
+  param "disk_name" {
+    type        = string
+    description = "The name of the managed disk that is being deleted."
+  }
+
+  step "container" "create_compute_disk_snapshot" {
+    image = "ghcr.io/turbot/flowpipe-image-azure-cli"
+    cmd   = [
+      "snapshot", "create",
+      "-g", param.resource_group,
+      "-n", param.snapshot_name,
+      "--source", param.disk_name,
+      "--subscription", param.subscription_id
+    ]
+
+    env = credential.azure[param.cred].env
+  }
+
+  step "container" "delete_compute_disk" {
+    depends_on = [step.container.create_compute_disk_snapshot]
+    image = "ghcr.io/turbot/flowpipe-image-azure-cli"
+    cmd   = ["disk", "delete", "--yes", "-g", param.resource_group, "-n", param.disk_name, "--subscription", param.subscription_id]
+
+    env = credential.azure[param.cred].env
+  }
+
+  output "disk" {
+    description = "The deleted compute disk details."
+    value       = jsondecode(step.container.delete_compute_disk.stdout)
+  }
 }

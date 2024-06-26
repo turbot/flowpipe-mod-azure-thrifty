@@ -1,11 +1,13 @@
 locals {
   compute_virtual_machine_exceeding_max_age_query = <<-EOQ
   select
+    concat(vm.id,' (', vm.title, ') [', vm.size, '/', vm.region, '/', vm.resource_group, ']') as title,
     vm.id,
     vm.name,
     vm.subscription_id,
     vm.resource_group,
-    vm.title
+    vm.title,
+    vm._ctx ->> 'connection_name' as cred
   from
     azure_compute_virtual_machine as vm,
     jsonb_array_elements(statuses) as s,
@@ -257,6 +259,20 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
           success_msg = ""
           error_msg   = ""
         },
+        "stop_virtual_machine" = {
+          label        = "Stop virtual_machine"
+          value        = "stop_virtual_machine"
+          style        = local.style_alert
+          pipeline_ref = local.azure_pipeline_stop_compute_virtual_machine
+          pipeline_args = {
+            vm_name         = param.name
+            resource_group  = param.resource_group
+            subscription_id = param.subscription_id
+            cred            = param.cred
+          }
+          success_msg = "Stopped Compute virtual_machine ${param.title}."
+          error_msg   = "Error stoping Compute virtual_machine ${param.title}."
+        }
         "delete_virtual_machine" = {
           label        = "Delete virtual_machine"
           value        = "delete_virtual_machine"

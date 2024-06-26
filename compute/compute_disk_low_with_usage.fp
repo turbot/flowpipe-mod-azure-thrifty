@@ -1,6 +1,6 @@
 locals {
   compute_disks_with_low_usage_query = <<-EOQ
-  with disk_usage as (
+    with disk_usage as (
       select
         name,
         resource_group
@@ -35,7 +35,7 @@ locals {
         subscription_id
     )
     select
-      d.id as resource,
+      concat(d.id, ' [', d.resource_group, '/', d.subscription_id, ']') as resource,
       d.name as disk_name,
       u.avg_max,
       d.name || ' averaging ' || avg_max || ' read and write ops over the last ' || days / 2 || ' days.' as title

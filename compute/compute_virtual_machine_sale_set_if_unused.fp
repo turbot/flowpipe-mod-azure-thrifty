@@ -271,9 +271,9 @@ pipeline "correct_one_virtual_machine_scale_set_if_unused" {
           success_msg = ""
           error_msg   = ""
         },
-        "delete" = {
+        "delete_virtual_machine_scale_set" = {
           label        = "Delete Virtual Machine Scale Set"
-          value        = "delete"
+          value        = "delete_virtual_machine_scale_set"
           style        = local.style_alert
           pipeline_ref = local.azure_pipeline_delete_virtual_machine_scale_set
           pipeline_args = {
@@ -311,5 +311,5 @@ variable "virtual_machine_scale_sets_if_unused_default_action" {
 variable "virtual_machine_scale_sets_if_unused_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete"]
+  default     = ["skip", "delete_virtual_machine_scale_set"]
 }

@@ -10,7 +10,7 @@ locals {
     azure_log_profile as lp
     left join azure_subscription as sub on lp.subscription_id = sub.subscription_id
   where
-    lp.retention_policy ->> 'enabled' <> 'true'
+    lp.retention_policy ->> 'enabled' <> 'true';
   EOQ
 }
 
@@ -282,7 +282,7 @@ variable "monitor_log_profiles_without_retention_policy_trigger_schedule" {
 variable "monitor_log_profiles_without_retention_policy_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
-  default     = "enable_log_profile_retention"
+  default     = "notify"
 }
 
 variable "monitor_log_profiles_without_retention_policy_enabled_actions" {
