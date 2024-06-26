@@ -1,6 +1,7 @@
 locals {
   storage_accounts_without_lifecycle_policy_query = <<-EOQ
-  select
+    select
+      concat(ac.id, ' [', ac.resource_group, '/', ac.subscription_id, ']') as title,
       ac.id as resource,
       ac.name,
       ac.subscription_id,
@@ -11,13 +12,13 @@ locals {
       azure_storage_account as ac
       left join azure_subscription as sub on ac.subscription_id = sub.subscription_id
     where
-      (ac.lifecycle_management_policy -> 'properties' -> 'policy' -> 'rules') is null;
+      (ac.lifecycle_management_policy -> 'properties' -> 'policy' -> 'rules') is null limit 1;
   EOQ
 }
 
 trigger "query" "detect_and_correct_storage_accounts_without_lifecycle_policy" {
-  title         = "Detect & correct Storage Accounts exceeding max age"
-  description   = "Detects Storage Accounts exceeding max age and runs your chosen action."
+  title         = "Detect & correct Storage Accounts without lifecycle policy"
+  description   = "Detects Storage Accounts without lifecycle policy and runs your chosen action."
   documentation = file("./storage/docs/detect_and_correct_storage_accounts_without_lifecycle_policy_trigger.md")
   tags          = merge(local.storage_common_tags, { class = "unused" })
 
@@ -35,8 +36,8 @@ trigger "query" "detect_and_correct_storage_accounts_without_lifecycle_policy" {
 }
 
 pipeline "detect_and_correct_storage_accounts_without_lifecycle_policy" {
-  title         = "Detect & correct Storage Accounts exceeding max age"
-  description   = "Detects Storage Accounts exceeding max age and runs your chosen action."
+  title         = "Detect & correct Storage Accounts without lifecycle policy"
+  description   = "Detects Storage Accounts without lifecycle policy and runs your chosen action."
   documentation = file("./storage/docs/detect_and_correct_storage_accounts_without_lifecycle_policy.md")
   tags          = merge(local.storage_common_tags, { class = "unused", type = "featured" })
 
@@ -95,8 +96,8 @@ pipeline "detect_and_correct_storage_accounts_without_lifecycle_policy" {
 }
 
 pipeline "correct_storage_accounts_without_lifecycle_policy" {
-  title         = "Correct Storage Accounts exceeding max age"
-  description   = "Runs corrective action on a collection of Storage Accounts exceeding max age."
+  title         = "Correct Storage Accounts without lifecycle policy"
+  description   = "Runs corrective action on a collection of Storage Accounts without lifecycle policy."
   documentation = file("./storage/docs/correct_storage_accounts_without_lifecycle_policy.md")
   tags          = merge(local.storage_common_tags, { class = "unused" })
 
@@ -260,7 +261,7 @@ pipeline "correct_one_storage_account_without_lifecycle_policy" {
           style        = local.style_alert
           pipeline_ref = local.azure_pipeline_delete_storage_account
           pipeline_args = {
-            name             = param.name
+            account_name      = param.name
             resource_group   = param.resource_group
             subscription_id  = param.subscription_id
             cred             = param.cred
@@ -288,7 +289,7 @@ variable "storage_accounts_without_lifecycle_policy_trigger_schedule" {
 variable "storage_accounts_without_lifecycle_policy_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
-  default     = "notify"
+  default     = "delete_storage_account"
 }
 
 variable "storage_accounts_without_lifecycle_policy_enabled_actions" {
