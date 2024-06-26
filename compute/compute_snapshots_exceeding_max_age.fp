@@ -260,9 +260,9 @@ pipeline "correct_one_compute_snapshot_exceeding_max_age" {
           style        = local.style_alert
           pipeline_ref = local.azure_pipeline_delete_compute_snapshot
           pipeline_args = {
-            name             = param.name
+            snapshot_name    = param.name
             resource_group   = param.resource_group
-            subscription_id  = param.subscription_id   
+            subscription_id  = param.subscription_id
             cred             = param.cred
           }
           success_msg = "Deleted Compute snapshot ${param.title}."

@@ -312,7 +312,7 @@ variable "compute_disks_if_unattached_trigger_schedule" {
 variable "compute_disks_if_unattached_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
-  default     = "snapshot_and_delete_disk"
+  default     = "notify"
 }
 
 variable "compute_disks_if_unattached_enabled_actions" {

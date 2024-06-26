@@ -290,7 +290,7 @@ pipeline "correct_one_compute_disks_with_low_usage" {
           label        = "Delete disk"
           value        = "delete_disk"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_compute_snapshot
+          pipeline_ref = local.azure_pipeline_delete_compute_disk
           pipeline_args = {
             disk_name       = param.disk_name
             resource_group  = param.resource_group
