@@ -1,43 +1,46 @@
 locals {
-  compute_disks_larger_query = <<-EOQ
-  select
-      disk.title || ' is ' || disk_size_gb || ' GB.' as title,
+  compute_disks_exceeding_max_size_query = <<-EOQ
+    select
+      concat(disk.id, ' [', '/', disk.resource_group, '/', disk.subscription_id, ']') as title,
       disk.id as resource,
       disk.name,
-      disk.disk_size_gb
+      disk.subscription_id,
+      disk.resource_group,
+      disk.name || to_char(current_date, 'YYYYMMDD') as snapshot_name,
+      disk.disk_size_gb,
+      disk._ctx ->> 'connection_name' as cred
     from
       azure_compute_disk as disk,
       azure_subscription as sub
     where
-      disk.disk_size_gb <= ${var.compute_disk_exceeding_max_size}
-      and
-      sub.subscription_id = disk.subscription_id;
+      disk.disk_size_gb >= ${var.compute_disk_exceeding_max_size}
+      and sub.subscription_id = disk.subscription_id;
   EOQ
 }
 
-trigger "query" "detect_and_correct_disks_large" {
-  title         = "Detect & correct Compute larger disks"
-  description   = "Detects Compute larger disks and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_correct_disks_large_trigger.md")
+trigger "query" "detect_and_correct_disks_exceeding_max_size" {
+  title         = "Detect & correct Compute disk exceeding max size"
+  description   = "Detects Compute disks exceeding max size and runs your chosen action."
+  documentation = file("./compute/docs/detect_and_correct_disks_exceeding_max_size_trigger.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
-  enabled  = var.compute_disks_large_trigger_enabled
-  schedule = var.compute_disks_large_trigger_schedule
+  enabled  = var.compute_disks_exceeding_max_size_trigger_enabled
+  schedule = var.compute_disks_exceeding_max_size_trigger_schedule
   database = var.database
-  sql      = local.compute_disks_larger_query
+  sql      = local.compute_disks_exceeding_max_size_query
 
   capture "insert" {
-    pipeline = pipeline.correct_compute_disks_large
+    pipeline = pipeline.correct_compute_disks_exceeding_max_size
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_correct_disks_large" {
-  title         = "Detect & correct Compute disks large"
-  description   = "Detects Compute larger disks and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_correct_disks_large.md")
+pipeline "detect_and_correct_disks_exceeding_max_size" {
+  title         = "Detect & correct Compute disks exceeding max size"
+  description   = "Detects Compute disks exceeding max size and runs your chosen action."
+  documentation = file("./compute/docs/detect_and_correct_disks_exceeding_max_size.md")
   tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -67,22 +70,22 @@ pipeline "detect_and_correct_disks_large" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_disks_large_default_action
+    default     = var.compute_disks_exceeding_max_size_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_disks_large_enabled_actions
+    default     = var.compute_disks_exceeding_max_size_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.compute_disks_larger_query
+    sql      = local.compute_disks_exceeding_max_size_query
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.correct_compute_disks_large
+    pipeline = pipeline.correct_compute_disks_exceeding_max_size
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -94,16 +97,17 @@ pipeline "detect_and_correct_disks_large" {
   }
 }
 
-pipeline "correct_compute_disks_large" {
-  title         = "Correct Compute larger disks"
-  description   = "Runs corrective action on a collection of Compute larger disks."
-  documentation = file("./compute/docs/correct_compute_disks_large.md")
+pipeline "correct_compute_disks_exceeding_max_size" {
+  title         = "Correct Compute disks exceeding max size"
+  description   = "Runs corrective action on a collection of Compute disks exceeding max size."
+  documentation = file("./compute/docs/correct_compute_disks_exceeding_max_size.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "items" {
     type = list(object({
       title           = string
       name            = string
+      snapshot_name   = string
       resource_group  = string
       subscription_id = string
       cred            = string
@@ -132,13 +136,13 @@ pipeline "correct_compute_disks_large" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_disks_large_default_action
+    default     = var.compute_disks_exceeding_max_size_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_disks_large_enabled_actions
+    default     = var.compute_disks_exceeding_max_size_enabled_actions
   }
 
   step "message" "notify_detection_count" {
@@ -154,10 +158,11 @@ pipeline "correct_compute_disks_large" {
   step "pipeline" "correct_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.correct_one_compute_disks_large
+    pipeline        = pipeline.correct_one_compute_disks_exceeding_max_size
     args = {
       title              = each.value.title
       name               = each.value.name
+      snapshot_name      = each.value.snapshot_name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
       cred               = each.value.cred
@@ -170,10 +175,10 @@ pipeline "correct_compute_disks_large" {
   }
 }
 
-pipeline "correct_one_compute_disks_large" {
-  title         = "Correct one large Compute disk"
-  description   = "Runs corrective action on an larger Compute disk."
-  documentation = file("./compute/docs/correct_one_compute_disks_large.md")
+pipeline "correct_one_compute_disks_exceeding_max_size" {
+  title         = "Correct one Compute disks exceeding max size"
+  description   = "Runs corrective action on compute disks exceeding max size."
+  documentation = file("./compute/docs/correct_one_compute_disks_exceeding_max_size.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "title" {
@@ -189,6 +194,11 @@ pipeline "correct_one_compute_disks_large" {
   param "resource_group" {
     type        = string
     description = local.description_resource_group
+  }
+
+  param "snapshot_name" {
+    type        = string
+    description = "The snapshot name of the disk."
   }
 
   param "subscription_id" {
@@ -222,13 +232,13 @@ pipeline "correct_one_compute_disks_large" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_disks_large_default_action
+    default     = var.compute_disks_exceeding_max_size_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_disks_large_enabled_actions
+    default     = var.compute_disks_exceeding_max_size_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -249,7 +259,7 @@ pipeline "correct_one_compute_disks_large" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped larger Compute disk ${param.title}"
+            text     = "Skipped Compute disk ${param.title} exceeding max size. "
           }
           success_msg = ""
           error_msg   = ""
@@ -267,34 +277,49 @@ pipeline "correct_one_compute_disks_large" {
           }
           success_msg = "Deleted Compute disk ${param.title}."
           error_msg   = "Error deleting Compute disk ${param.title}."
+        },
+        "snapshot_and_delete_disk" = {
+          label        = "Snapshot & Delete Disk"
+          value        = "snapshot_and_delete_disk"
+          style        = local.style_alert
+          pipeline_ref = pipeline.snapshand_and_delete_compute_disk
+          pipeline_args = {
+            disk_name       = param.name
+            resource_group  = param.resource_group
+            subscription_id = param.subscription_id
+            cred            = param.cred
+            snapshot_name   = param.snapshot_name
+          }
+          success_msg = "Deleted Compute disk ${param.title}."
+          error_msg   = "Error deleting Compute disk ${param.title}."
         }
       }
     }
   }
 }
 
-variable "compute_disks_large_trigger_enabled" {
+variable "compute_disks_exceeding_max_size_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "compute_disks_large_trigger_schedule" {
+variable "compute_disks_exceeding_max_size_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
 }
 
-variable "compute_disks_large_default_action" {
+variable "compute_disks_exceeding_max_size_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
 }
 
-variable "compute_disks_large_enabled_actions" {
+variable "compute_disks_exceeding_max_size_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_disk"]
+  default     = ["skip", "delete_disk", "snapshot_and_delete_disk"]
 }
 
 variable "compute_disk_exceeding_max_size" {

@@ -38,7 +38,10 @@ locals {
       concat(d.id, ' [', d.resource_group, '/', d.subscription_id, ']') as resource,
       d.name as disk_name,
       u.avg_max,
-      d.name || ' averaging ' || avg_max || ' read and write ops over the last ' || days / 2 || ' days.' as title
+      d.name || ' averaging ' || avg_max || ' read and write ops over the last ' || days / 2 || ' days.' as title,
+      u.resource_group,
+      u.subscription_id,
+      d._ctx ->> 'connection_name' as cred
     from
       disk_usage as u left join azure_compute_disk as d on u.name = d.name
       left join azure_subscription as sub on sub.subscription_id = d.subscription_id
