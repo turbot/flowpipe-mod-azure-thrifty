@@ -1,31 +1,32 @@
 locals {
   compute_disks_attached_to_stopped_virtual_machine_query = <<-EOQ
- with attached_disk_with_vm as (
-  select
-    concat(vm.id, ' [', vm.resource_group, '/', vm.subscription_id, ']') as title,
-    vm.name,
-    vm.power_state as virtual_machine_state,
-    vm.os_disk_name,
-    jsonb_agg(data_disk ->> 'name') as data_disk_names
-  from
-    azure_compute_virtual_machine as vm
-    left join jsonb_array_elements(vm.data_disks) as data_disk on true
-  group by vm.id, vm.resource_group, vm.subscription_id, vm.name, vm.os_disk_name, vm.power_state
-)
-select
-  m.title,
-  d.id as resource,
-  d.name as disk_name,
-  m.name as vm_name,
-  d.resource_group,
-  d.subscription_id,
-  d._ctx ->> 'connection_name' as cred
-from
-  azure_compute_disk as d
-  left join attached_disk_with_vm as m on (d.name = m.os_disk_name or m.data_disk_names ?| array[d.name])
-  left join azure_subscription as sub on sub.subscription_id = d.subscription_id
-where
-  d.disk_state != 'Unattached' or m.virtual_machine_state != 'running';
+    with attached_disk_with_vm as (
+      select
+        concat(vm.id, ' [', vm.resource_group, '/', vm.subscription_id, ']') as title,
+        vm.name,
+        vm.power_state as virtual_machine_state,
+        vm.os_disk_name,
+        jsonb_agg(data_disk ->> 'name') as data_disk_names
+      from
+        azure_compute_virtual_machine as vm
+        left join jsonb_array_elements(vm.data_disks) as data_disk on true
+      group by vm.id, vm.resource_group, vm.subscription_id, vm.name, vm.os_disk_name, vm.power_state
+    )
+    select
+      m.title,
+      d.id as resource,
+      d.name as disk_name,
+      m.name as vm_name,
+      d.resource_group,
+      d.subscription_id,
+      d.name || to_char(current_date, 'YYYYMMDD') as snapshot_name,
+      d._ctx ->> 'connection_name' as cred
+    from
+      azure_compute_disk as d
+      left join attached_disk_with_vm as m on (d.name = m.os_disk_name or m.data_disk_names ?| array[d.name])
+      left join azure_subscription as sub on sub.subscription_id = d.subscription_id
+    where
+      d.disk_state != 'Unattached' or m.virtual_machine_state != 'running';
   EOQ
 }
 
@@ -119,6 +120,7 @@ pipeline "correct_compute_disks_attached_to_stopped_virtual_machines" {
       title           = string
       disk_name       = string
       vm_name         = string
+      snapshot_name   = string
       resource_group  = string
       subscription_id = string
       cred            = string
@@ -172,7 +174,8 @@ pipeline "correct_compute_disks_attached_to_stopped_virtual_machines" {
     args = {
       title              = each.value.title
       vm_name            = each.value.vm_name
-      disk_name               = each.value.disk_name
+      disk_name          = each.value.disk_name
+      snapshot_name      = each.value.snapshot_name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
       cred               = each.value.cred
@@ -199,6 +202,11 @@ pipeline "correct_one_compute_disks_attached_to_stopped_virtual_machines" {
   param "disk_name" {
     type        = string
     description = "The name of the Compute disk."
+  }
+
+  param "snapshot_name" {
+    type        = string
+    description = "The snapshot name of the disk."
   }
 
   param "vm_name" {
@@ -274,106 +282,51 @@ pipeline "correct_one_compute_disks_attached_to_stopped_virtual_machines" {
           success_msg = ""
           error_msg   = ""
         },
-        "detach_delete_disks" = {
-          label        = "Delete Snapshot"
-          value        = "delete_snapshot"
+        "detach_disk" = {
+          label        = "Detach disk"
+          value        = "detach_disk"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_compute_snapshot
+          pipeline_ref = local.azure_pipeline_detach_compute_disk
           pipeline_args = {
-            disk_name            = param.disk_name
+            vm_name         = param.vm_name
+            disk_name       = param.disk_name
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
             cred            = param.cred
           }
-          success_msg = "Deleted Compute snapshot ${param.title}."
-          error_msg   = "Error deleting Compute snapshot ${param.title}."
+          success_msg = "Deleted Compute disk ${param.title}."
+          error_msg   = "Error deleting Compute disk ${param.title}."
+        },
+        "delete_disk" = {
+          label        = "Delete disk"
+          value        = "delete_disk"
+          style        = local.style_alert
+          pipeline_ref = local.azure_pipeline_delete_compute_disk
+          pipeline_args = {
+            disk_name       = param.disk_name
+            resource_group  = param.resource_group
+            subscription_id = param.subscription_id
+            cred            = param.cred
+          }
+          success_msg = "Deleted Compute disk ${param.title}."
+          error_msg   = "Error deleting Compute disk ${param.title}."
+        },
+        "snapshot_and_delete_disk" = {
+          label        = "Snapshot & Delete Disk"
+          value        = "snapshot_and_delete_disk"
+          style        = local.style_alert
+          pipeline_ref = pipeline.snapshand_and_delete_compute_disk
+          pipeline_args = {
+            disk_name       = param.disk_name
+            resource_group  = param.resource_group
+            subscription_id = param.subscription_id
+            cred            = param.cred
+            snapshot_name   = param.snapshot_name
+          }
+          success_msg = "Deleted Compute disk ${param.title}."
+          error_msg   = "Error deleting Compute disk ${param.title}."
         }
       }
-    }
-  }
-}
-
-pipeline "detach_and_delete_compute_disk" {
-  title       = "Detach and Delete compute disk."
-  description = "A utility pipeline which detach and delete an EBS volume."
-
-  documentation = file("./compute/docs/detach_and_delete_compute_disk.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
-
-  param "disk_name" {
-    type        = string
-    description = "The name of the Compute disk."
-  }
-
-  param "vm_name" {
-    type        = string
-    description = "The name of the Compute virtual machine."
-  }
-
-  param "resource_group" {
-    type        = string
-    description = local.description_resource_group
-  }
-
-  param "subscription_id" {
-    type        = string
-    description = local.description_subscription_id
-  }
-
-  param "cred" {
-    type        = string
-    description = local.description_credential
-  }
-
-  param "notifier" {
-    type        = string
-    description = local.description_notifier
-    default     = var.notifier
-  }
-
-  param "notification_level" {
-    type        = string
-    description = local.description_notifier_level
-    default     = var.notification_level
-  }
-
-  param "approvers" {
-    type        = list(string)
-    description = local.description_approvers
-    default     = var.approvers
-  }
-
-  param "default_action" {
-    type        = string
-    description = local.description_default_action
-    default     = var.compute_snapshots_exceeding_max_age_default_action
-  }
-
-  param "enabled_actions" {
-    type        = list(string)
-    description = local.description_enabled_actions
-    default     = var.compute_disks_attached_to_stopped_virtual_machines_enabled_actions
-  }
-
-  step "pipeline" "detach_compute_disk" {
-    pipeline = azure.pipeline.detach_compute_disk
-    args = {
-      cred            = param.cred
-      disk_name       = param.disk_name
-      vm_name         = param.vm_name
-      subscription_id = param.subscription_id
-      resource_group  = param.resource_group
-    }
-  }
-
-  step "pipeline" "delete_compute_disk" {
-    depends_on = [step.pipeline.detach_compute_disk]
-    pipeline   = azure.pipeline.delete_compute_disk
-    args = {
-      cred            = param.cred
-      disk_name       = param.disk_name
-      subscription_id = param.subscription_id
-      resource_group  = param.resource_group
     }
   }
 }
@@ -381,7 +334,7 @@ pipeline "detach_and_delete_compute_disk" {
 variable "compute_disks_attached_to_stopped_virtual_machines_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "detach_delete_disks"]
+  default     = ["skip", "detach_disk", "snapshot_and_delete_disk", "delete_disk"]
 }
 
 variable "compute_disks_attached_to_stopped_virtual_machines_default_action" {
