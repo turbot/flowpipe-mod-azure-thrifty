@@ -55,4 +55,5 @@ locals {
   azure_pipeline_update_compute_snapshot                     = azure.pipeline.update_compute_snapshot
   azure_pipeline_stop_kusto_cluster                          = azure.pipeline.stop_kusto_cluster
   azure_pipeline_stop_network_application_gateway            = azure.pipeline.stop_network_application_gateway
+  azure_pipeline_delete_sql_database                         = azure.pipeline.delete_sql_database
 }
