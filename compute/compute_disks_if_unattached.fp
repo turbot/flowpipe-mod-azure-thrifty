@@ -281,7 +281,7 @@ pipeline "correct_one_compute_disks_if_unattached" {
           label        = "Snapshot & Delete Disk"
           value        = "snapshot_and_delete_disk"
           style        = local.style_alert
-          pipeline_ref = pipeline.snapshand_and_delete_compute_disk
+          pipeline_ref = pipeline.snapshot_and_delete_compute_disk
           pipeline_args = {
             disk_name       = param.name
             resource_group  = param.resource_group
@@ -321,7 +321,7 @@ variable "compute_disks_if_unattached_enabled_actions" {
   default     = ["skip", "delete_disk", "snapshot_and_delete_disk"]
 }
 
-pipeline "snapshand_and_delete_compute_disk" {
+pipeline "snapshot_and_delete_compute_disk" {
   title       = "Delete Compute Disk"
   description = "Delete a managed disk."
 

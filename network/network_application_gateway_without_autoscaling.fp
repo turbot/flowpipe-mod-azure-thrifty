@@ -1,47 +1,45 @@
 locals {
-  compute_disks_exceeding_max_size_query = <<-EOQ
+  network_application_gateway_without_autoscaling_query = <<-EOQ
     select
-      concat(disk.id, ' [', '/', disk.resource_group, '/', disk.subscription_id, ']') as title,
-      disk.id as resource,
-      disk.name,
-      disk.subscription_id,
-      disk.resource_group,
-      disk.name || to_char(current_date, 'YYYYMMDD') as snapshot_name,
-      disk.disk_size_gb,
-      disk._ctx ->> 'connection_name' as cred
+      concat(ag.id, ' [', ag.resource_group, '/', ag.subscription_id, ']') as title,
+      ag.id as id,
+      ag.name,
+      ag.resource_group,
+      ag.subscription_id,
+      ag._ctx ->> 'connection_name' as cred
     from
-      azure_compute_disk as disk,
+      azure_application_gateway as ag,
       azure_subscription as sub
     where
-      disk.disk_size_gb >= ${var.compute_disk_exceeding_max_size}
-      and sub.subscription_id = disk.subscription_id;
+      ag.autoscale_configuration is null
+      and sub.subscription_id = ag.subscription_id;
   EOQ
 }
 
-trigger "query" "detect_and_correct_disks_exceeding_max_size" {
-  title         = "Detect & correct Compute disk exceeding max size"
-  description   = "Detects Compute disks exceeding max size and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_correct_disks_exceeding_max_size_trigger.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+trigger "query" "detect_and_correct_network_application_gateway_without_autoscaling" {
+  title         = "Detect & correct Network Application Gateways without autoscaling"
+  description   = "Detects Network Application Gateways without autoscaling enabled and runs your chosen action."
+  //documentation = file("./network/docs/detect_and_correct_network_application_gateway_without_autoscaling_trigger.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
-  enabled  = var.compute_disks_exceeding_max_size_trigger_enabled
-  schedule = var.compute_disks_exceeding_max_size_trigger_schedule
+  enabled  = var.network_application_gateway_without_autoscaling_trigger_enabled
+  schedule = var.network_application_gateway_without_autoscaling_trigger_schedule
   database = var.database
-  sql      = local.compute_disks_exceeding_max_size_query
+  sql      = local.network_application_gateway_without_autoscaling_query
 
   capture "insert" {
-    pipeline = pipeline.correct_compute_disks_exceeding_max_size
+    pipeline = pipeline.correct_network_application_gateway_without_autoscaling
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_correct_disks_exceeding_max_size" {
-  title         = "Detect & correct Compute disks exceeding max size"
-  description   = "Detects Compute disks exceeding max size and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_correct_disks_exceeding_max_size.md")
-  tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
+pipeline "detect_and_correct_network_application_gateway_without_autoscaling" {
+  title         = "Detect & correct Network Application Gateways without autoscaling"
+  description   = "Detects Network Application Gateways without autoscaling enabled and runs your chosen action."
+  //documentation = file("./network/docs/detect_and_correct_network_application_gateway_without_autoscaling.md")
+  tags          = merge(local.network_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
     type        = string
@@ -70,22 +68,22 @@ pipeline "detect_and_correct_disks_exceeding_max_size" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_disks_exceeding_max_size_default_action
+    default     = var.network_application_gateway_without_autoscaling_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_disks_exceeding_max_size_enabled_actions
+    default     = var.network_application_gateway_without_autoscaling_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.compute_disks_exceeding_max_size_query
+    sql      = local.network_application_gateway_without_autoscaling_query
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.correct_compute_disks_exceeding_max_size
+    pipeline = pipeline.correct_network_application_gateway_without_autoscaling
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -97,17 +95,17 @@ pipeline "detect_and_correct_disks_exceeding_max_size" {
   }
 }
 
-pipeline "correct_compute_disks_exceeding_max_size" {
-  title         = "Correct Compute disks exceeding max size"
-  description   = "Runs corrective action on a collection of Compute disks exceeding max size."
-  documentation = file("./compute/docs/correct_compute_disks_exceeding_max_size.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+pipeline "correct_network_application_gateway_without_autoscaling" {
+  title         = "Correct Network Application Gateways without autoscaling"
+  description   = "Runs corrective action on a collection of Network Application Gateways without autoscaling enabled."
+  //documentation = file("./network/docs/correct_network_application_gateway_without_autoscaling.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
   param "items" {
     type = list(object({
+      id              = string
       title           = string
       name            = string
-      snapshot_name   = string
       resource_group  = string
       subscription_id = string
       cred            = string
@@ -136,33 +134,32 @@ pipeline "correct_compute_disks_exceeding_max_size" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_disks_exceeding_max_size_default_action
+    default     = var.network_application_gateway_without_autoscaling_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_disks_exceeding_max_size_enabled_actions
+    default     = var.network_application_gateway_without_autoscaling_enabled_actions
   }
 
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} large Compute disks."
+    text     = "Detected ${length(param.items)} Network Application Gateways without autoscaling enabled."
   }
 
   step "transform" "items_by_id" {
-    value = { for row in param.items : row.name => row }
+    value = { for row in param.items : row.id => row }
   }
 
-  step "pipeline" "correct_item" {
+  step "pipeline" "update_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.correct_one_compute_disks_exceeding_max_size
+    pipeline        = pipeline.correct_one_network_application_gateway_without_autoscaling
     args = {
       title              = each.value.title
       name               = each.value.name
-      snapshot_name      = each.value.snapshot_name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
       cred               = each.value.cred
@@ -175,11 +172,11 @@ pipeline "correct_compute_disks_exceeding_max_size" {
   }
 }
 
-pipeline "correct_one_compute_disks_exceeding_max_size" {
-  title         = "Correct one Compute disks exceeding max size"
-  description   = "Runs corrective action on compute disks exceeding max size."
-  documentation = file("./compute/docs/correct_one_compute_disks_exceeding_max_size.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+pipeline "correct_one_network_application_gateway_without_autoscaling" {
+  title         = "Correct one Network Application Gateway without autoscaling"
+  description   = "Runs corrective action on a single Network Application Gateway without autoscaling enabled."
+  //documentation = file("./network/docs/correct_one_network_application_gateway_without_autoscaling.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
   param "title" {
     type        = string
@@ -188,17 +185,12 @@ pipeline "correct_one_compute_disks_exceeding_max_size" {
 
   param "name" {
     type        = string
-    description = "The name of the Compute disk."
+    description = "The name of the Network Application Gateway."
   }
 
   param "resource_group" {
     type        = string
     description = local.description_resource_group
-  }
-
-  param "snapshot_name" {
-    type        = string
-    description = "The snapshot name of the disk."
   }
 
   param "subscription_id" {
@@ -209,6 +201,7 @@ pipeline "correct_one_compute_disks_exceeding_max_size" {
   param "cred" {
     type        = string
     description = local.description_credential
+    default     = "default"
   }
 
   param "notifier" {
@@ -232,13 +225,13 @@ pipeline "correct_one_compute_disks_exceeding_max_size" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_disks_exceeding_max_size_default_action
+    default     = var.network_application_gateway_without_autoscaling_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_disks_exceeding_max_size_enabled_actions
+    default     = var.network_application_gateway_without_autoscaling_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -247,7 +240,7 @@ pipeline "correct_one_compute_disks_exceeding_max_size" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected larger Compute disk ${param.title}."
+      detect_msg         = "Detected Network Application Gateway ${param.title} without autoscaling enabled."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -259,71 +252,50 @@ pipeline "correct_one_compute_disks_exceeding_max_size" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Compute disk ${param.title} exceeding max size. "
+            text     = "Skipped Network Application Gateway ${param.title} without autoscaling enabled."
           }
           success_msg = ""
           error_msg   = ""
         },
-        "delete_disk" = {
-          label        = "Delete Disk"
-          value        = "delete_disk"
+        "stop_application_gateway" = {
+          label        = "Stop Application Gateway"
+          value        = "stop_application_gateway"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_compute_disk
+          pipeline_ref = local.azure_pipeline_stop_network_application_gateway
           pipeline_args = {
-            disk_name       = param.name
-            resource_group  = param.resource_group
-            subscription_id = param.subscription_id
-            cred            = param.cred
+            application_gateway_name = param.name
+            resource_group           = param.resource_group
+            subscription_id          = param.subscription_id
+            cred                     = param.cred
           }
-          success_msg = "Deleted Compute disk ${param.title}."
-          error_msg   = "Error deleting Compute disk ${param.title}."
-        },
-        "snapshot_and_delete_disk" = {
-          label        = "Snapshot & Delete Disk"
-          value        = "snapshot_and_delete_disk"
-          style        = local.style_alert
-          pipeline_ref = pipeline.snapshot_and_delete_compute_disk
-          pipeline_args = {
-            disk_name       = param.name
-            resource_group  = param.resource_group
-            subscription_id = param.subscription_id
-            cred            = param.cred
-            snapshot_name   = param.snapshot_name
-          }
-          success_msg = "Deleted Compute disk ${param.title}."
-          error_msg   = "Error deleting Compute disk ${param.title}."
+          success_msg = "Stopped Network Application Gateway ${param.title}."
+          error_msg   = "Error stopping Network Application Gateway ${param.title}."
         }
       }
     }
   }
 }
 
-variable "compute_disks_exceeding_max_size_trigger_enabled" {
+variable "network_application_gateway_without_autoscaling_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "compute_disks_exceeding_max_size_trigger_schedule" {
+variable "network_application_gateway_without_autoscaling_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
 }
 
-variable "compute_disks_exceeding_max_size_default_action" {
+variable "network_application_gateway_without_autoscaling_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
 }
 
-variable "compute_disks_exceeding_max_size_enabled_actions" {
+variable "network_application_gateway_without_autoscaling_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_disk", "snapshot_and_delete_disk"]
-}
-
-variable "compute_disk_exceeding_max_size" {
-  type        = number
-  description = "The maximum size (GB) allowed for disks."
-  default     = 90
+  default     = ["skip", "stop_application_gateway"]
 }

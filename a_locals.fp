@@ -53,4 +53,6 @@ locals {
   azure_pipeline_delete_storage_account                      = azure.pipeline.delete_storage_account
   azure_pipeline_detach_compute_disk                         = azure.pipeline.detach_compute_disk
   azure_pipeline_update_compute_snapshot                     = azure.pipeline.update_compute_snapshot
+  azure_pipeline_stop_kusto_cluster                          = azure.pipeline.stop_kusto_cluster
+  azure_pipeline_stop_network_application_gateway            = azure.pipeline.stop_network_application_gateway
 }
