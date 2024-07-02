@@ -19,7 +19,7 @@ locals {
 trigger "query" "detect_and_correct_kusto_cluster_without_autoscaling" {
   title         = "Detect & correct Kusto Clusters without autoscaling"
   description   = "Detects Kusto Clusters without autoscaling enabled and runs your chosen action."
-  //documentation = file("./kusto/docs/detect_and_correct_kusto_cluster_without_autoscaling_trigger.md")
+  documentation = file("./kusto/docs/detect_and_correct_kusto_cluster_without_autoscaling_trigger.md")
   tags          = merge(local.kusto_common_tags, { class = "unused" })
 
   enabled  = var.kusto_cluster_without_autoscaling_trigger_enabled
@@ -38,7 +38,7 @@ trigger "query" "detect_and_correct_kusto_cluster_without_autoscaling" {
 pipeline "detect_and_correct_kusto_cluster_without_autoscaling" {
   title         = "Detect & correct Kusto Clusters without autoscaling"
   description   = "Detects Kusto Clusters without autoscaling enabled and runs your chosen action."
-  //documentation = file("./kusto/docs/detect_and_correct_kusto_cluster_without_autoscaling.md")
+  documentation = file("./kusto/docs/detect_and_correct_kusto_cluster_without_autoscaling.md")
   tags          = merge(local.kusto_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -98,7 +98,7 @@ pipeline "detect_and_correct_kusto_cluster_without_autoscaling" {
 pipeline "correct_kusto_cluster_without_autoscaling" {
   title         = "Correct Kusto Clusters without autoscaling"
   description   = "Runs corrective action on a collection of Kusto Clusters without autoscaling enabled."
-  //documentation = file("./kusto/docs/correct_kusto_cluster_without_autoscaling.md")
+  documentation = file("./kusto/docs/correct_kusto_cluster_without_autoscaling.md")
   tags          = merge(local.kusto_common_tags, { class = "unused" })
 
   param "items" {
@@ -175,7 +175,7 @@ pipeline "correct_kusto_cluster_without_autoscaling" {
 pipeline "correct_one_kusto_cluster_without_autoscaling" {
   title         = "Correct one Kusto Cluster without autoscaling"
   description   = "Runs corrective action on a single Kusto Cluster without autoscaling enabled."
-  //documentation = file("./kusto/docs/correct_one_kusto_cluster_without_autoscaling.md")
+  documentation = file("./kusto/docs/correct_one_kusto_cluster_without_autoscaling.md")
   tags          = merge(local.kusto_common_tags, { class = "unused" })
 
   param "title" {

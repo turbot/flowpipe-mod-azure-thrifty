@@ -19,7 +19,7 @@ locals {
 trigger "query" "detect_and_correct_network_application_gateway_without_autoscaling" {
   title         = "Detect & correct Network Application Gateways without autoscaling"
   description   = "Detects Network Application Gateways without autoscaling enabled and runs your chosen action."
-  //documentation = file("./network/docs/detect_and_correct_network_application_gateway_without_autoscaling_trigger.md")
+  documentation = file("./network/docs/detect_and_correct_network_application_gateway_without_autoscaling_trigger.md")
   tags          = merge(local.network_common_tags, { class = "unused" })
 
   enabled  = var.network_application_gateway_without_autoscaling_trigger_enabled
@@ -38,7 +38,7 @@ trigger "query" "detect_and_correct_network_application_gateway_without_autoscal
 pipeline "detect_and_correct_network_application_gateway_without_autoscaling" {
   title         = "Detect & correct Network Application Gateways without autoscaling"
   description   = "Detects Network Application Gateways without autoscaling enabled and runs your chosen action."
-  //documentation = file("./network/docs/detect_and_correct_network_application_gateway_without_autoscaling.md")
+  documentation = file("./network/docs/detect_and_correct_network_application_gateway_without_autoscaling.md")
   tags          = merge(local.network_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -98,7 +98,7 @@ pipeline "detect_and_correct_network_application_gateway_without_autoscaling" {
 pipeline "correct_network_application_gateway_without_autoscaling" {
   title         = "Correct Network Application Gateways without autoscaling"
   description   = "Runs corrective action on a collection of Network Application Gateways without autoscaling enabled."
-  //documentation = file("./network/docs/correct_network_application_gateway_without_autoscaling.md")
+  documentation = file("./network/docs/correct_network_application_gateway_without_autoscaling.md")
   tags          = merge(local.network_common_tags, { class = "unused" })
 
   param "items" {
@@ -175,7 +175,7 @@ pipeline "correct_network_application_gateway_without_autoscaling" {
 pipeline "correct_one_network_application_gateway_without_autoscaling" {
   title         = "Correct one Network Application Gateway without autoscaling"
   description   = "Runs corrective action on a single Network Application Gateway without autoscaling enabled."
-  //documentation = file("./network/docs/correct_one_network_application_gateway_without_autoscaling.md")
+  documentation = file("./network/docs/correct_one_network_application_gateway_without_autoscaling.md")
   tags          = merge(local.network_common_tags, { class = "unused" })
 
   param "title" {
