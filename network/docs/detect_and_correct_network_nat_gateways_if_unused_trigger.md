@@ -1,59 +1,23 @@
 # Detect & correct Network NAT gateways if unused
 
+## Overview
+
 Azure Network NAT gateways with no subnets attached still cost money and should be deleted. This pipeline identifies Network NAT gateways with no subnets attached and either sends notifications or attempts predefined corrective actions.
 
-## Getting Started
 
-This control works out-of-the-box with sensible defaults, configurable via [variables](https://flowpipe.io/docs/build/mod-variables).
+### Getting Started
 
-You should be able to simply run the following command in your terminal:
+By default, this trigger is disabled, however it can be configred by [setting the below variables](https://flowpipe.io/docs/build/mod-variables#passing-input-variables)
+- `network_nat_gateways_if_unused_trigger_schedule` should be set to `true` as the default is `false`.
+- `network_load_balancers_if_unused_trigger_schedule` should be set to your desired running [schedule](https://flowpipe.io/docs/flowpipe-hcl/trigger/schedule#more-examples)
+- `network_nat_gateways_if_unused_default_action` should be set to your desired action (i.e. `"notify"` for notifications or `"delete_nat_gateway"` to delete the NAT gateway).
 
-```sh
-flowpipe pipeline run detect_and_correct_network_nat_gateways_if_unused
-```
-
-You should now receive notification messages for the detections in your configured [notifier](https://flowpipe.io/docs/reference/config-files/notifier).
-
-However, you may want to actually perform an action against these resources beyond a simple notification.
-
-### Interactive Decisions
-
-Through the use of an [Input Step](https://flowpipe.io/docs/build/input), you can make a decision on how to handle each detected item.
-
-In order to acheieve this, you will need to have an instance of Flowpipe Server running:
-
-```sh
-flowpipe server --mod-location=/path/to/mod
-```
-
-or if the current working directory contains the mod, simply:
-
+Then starting the server:
 ```sh
 flowpipe server
 ```
 
-You can then run the command below:
-
+or if you've set the variables in a `.fpvars` file:
 ```sh
-flowpipe pipeline run detect_and_correct_network_nat_gateways_if_unused --host local --arg='approvers=["default"]'
+flowpipe server --var-file=/path/to/your.fpvars
 ```
-
-This will prompt for an action for each detected resource and then attempt to perform the chosen action upon receipt of input.
-
-You can also decide to bypass asking for decision and just automatically apply the same action against all detections.
-
-### Automatic Actioning
-
-You can automatically apply a specific action without the need for running a Flowpipe Server and asking for a decision by setting the `default_action` parameter:
-
-```sh
-flowpipe pipeline run detect_and_correct_network_nat_gateways_if_unused --arg='default_action="delete_nat_gateway"'
-```
-
-However; if you have configured a non-empty list for your `approvers` variable, you will need to override it as below:
-
-```sh
-flowpipe pipeline run detect_and_correct_network_nat_gateways_if_unused --arg='approvers=[]' --arg='default_action="delete_nat_gateway"'
-```
-
-This will attempt to apply the action to every detected item, if you're happy with this approach you could have this occur mmore frequently by either scheduling the command by yourself or enabling the associated [Query Trigger](https://hub.flowpipe.io/mods/turbot/azure_thrifty/triggers/azure_thrifty.trigger.query.detect_and_correct_network_nat_gateways_if_unused).
