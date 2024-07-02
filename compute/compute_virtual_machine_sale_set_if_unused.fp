@@ -33,7 +33,7 @@ locals {
 trigger "query" "detect_and_correct_virtual_machine_scale_sets_if_unused" {
   title         = "Detect & correct Virtual Machine Scale Sets if unused"
   description   = "Detects unused Virtual Machine Scale Sets and runs your chosen action."
-  // documentation = file("./compute/docs/detect_and_correct_virtual_machine_scale_sets_if_unused.md")
+  documentation = file("./compute/docs/detect_and_correct_virtual_machine_scale_sets_if_unused_trigger.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   enabled  = var.virtual_machine_scale_sets_if_unused_trigger_enabled
@@ -52,7 +52,7 @@ trigger "query" "detect_and_correct_virtual_machine_scale_sets_if_unused" {
 pipeline "detect_and_correct_virtual_machine_scale_sets_if_unused" {
   title         = "Detect & correct Virtual Machine Scale Sets if unused"
   description   = "Detects unused Virtual Machine Scale Sets and runs your chosen action."
-  // documentation = file("./compute/docs/detect_and_correct_virtual_machine_scale_sets_if_unused.md")
+  documentation = file("./compute/docs/detect_and_correct_virtual_machine_scale_sets_if_unused.md")
   tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -112,7 +112,7 @@ pipeline "detect_and_correct_virtual_machine_scale_sets_if_unused" {
 pipeline "correct_virtual_machine_scale_sets_if_unused" {
   title         = "Correct Virtual Machine Scale Sets if unused"
   description   = "Runs corrective action on a collection of Virtual Machine Scale Sets which are unused."
-  // documentation = file("./compute/docs/correct_virtual_machine_scale_sets_if_unused.md")
+  documentation = file("./compute/docs/correct_virtual_machine_scale_sets_if_unused.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "items" {
@@ -189,7 +189,7 @@ pipeline "correct_virtual_machine_scale_sets_if_unused" {
 pipeline "correct_one_virtual_machine_scale_set_if_unused" {
   title         = "Correct one Virtual Machine Scale Set if unused"
   description   = "Runs corrective action on a single Virtual Machine Scale Set which is unused."
-  // documentation = file("./compute/docs/correct_one_virtual_machine_scale_set_if_unused.md")
+  documentation = file("./compute/docs/correct_one_virtual_machine_scale_set_if_unused.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "title" {

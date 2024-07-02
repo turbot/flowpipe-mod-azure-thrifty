@@ -50,13 +50,13 @@ You can also decide to bypass asking for decision and just automatically apply t
 You can automatically apply a specific action without the need for running a Flowpipe Server and asking for a decision by setting the `default_action` parameter:
 
 ```sh
-flowpipe pipeline run detect_and_correct_compute_disks_attached_to_stopped_virtual_machines --arg='default_action="detach_delete_disks"'
+flowpipe pipeline run detect_and_correct_compute_disks_attached_to_stopped_virtual_machines --arg='default_action="snapshot_and_delete_disk"'
 ```
 
 However; if you have configured a non-empty list for your `approvers` variable, you will need to override it as below:
 
 ```sh
-flowpipe pipeline run detect_and_correct_compute_disks_attached_to_stopped_virtual_machines --arg='approvers=[]' --arg='default_action="detach_delete_disks"'
+flowpipe pipeline run detect_and_correct_compute_disks_attached_to_stopped_virtual_machines --arg='approvers=[]' --arg='default_action="snapshot_and_delete_disk"'
 ```
 
 This will attempt to apply the action to every detected item, if you're happy with this approach you could have this occur mmore frequently by either scheduling the command by yourself or enabling the associated [Query Trigger](https://hub.flowpipe.io/mods/turbot/azure_thrifty/triggers/azure_thrifty.trigger.query.detect_and_correct_compute_disks_attached_to_stopped_virtual_machines).
