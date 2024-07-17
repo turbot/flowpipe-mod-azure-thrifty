@@ -18,7 +18,7 @@ locals {
 trigger "query" "detect_and_correct_kubernetes_cluster_exceeding_max_age" {
   title         = "Detect & correct Kubernetes clusters exceeding max age"
   description   = "Detects Kubernetes clusters exceeding max age and runs your chosen action."
-  // documentation = file("./kubernetes/docs/detect_and_correct_kubernetes_cluster_exceeding_max_age_trigger.md")
+  documentation = file("./kubernetes/docs/detect_and_correct_kubernetes_cluster_exceeding_max_age_trigger.md")
   tags          = merge(local.kubernetes_common_tags, { class = "unused" })
 
   enabled  = var.kubernetes_cluster_exceeding_max_age_trigger_enabled
@@ -37,7 +37,7 @@ trigger "query" "detect_and_correct_kubernetes_cluster_exceeding_max_age" {
 pipeline "detect_and_correct_kubernetes_cluster_exceeding_max_age" {
   title         = "Detect & correct Kubernetes clusters exceeding max age"
   description   = "Detects Kubernetes clusters exceeding max age and runs your chosen action."
-  // documentation = file("./kubernetes/docs/detect_and_correct_kubernetes_cluster_exceeding_max_age.md")
+  documentation = file("./kubernetes/docs/detect_and_correct_kubernetes_cluster_exceeding_max_age.md")
   tags          = merge(local.kubernetes_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -97,7 +97,7 @@ pipeline "detect_and_correct_kubernetes_cluster_exceeding_max_age" {
 pipeline "correct_kubernetes_cluster_exceeding_max_age" {
   title         = "Correct Kubernetes clusters exceeding max age"
   description   = "Runs corrective action on a collection of Kubernetes clusters exceeding max age."
-  // documentation = file("./kubernetes/docs/correct_kubernetes_cluster_exceeding_max_age.md")
+  documentation = file("./kubernetes/docs/correct_kubernetes_cluster_exceeding_max_age.md")
   tags          = merge(local.kubernetes_common_tags, { class = "unused" })
 
   param "items" {
@@ -173,7 +173,7 @@ pipeline "correct_kubernetes_cluster_exceeding_max_age" {
 pipeline "correct_one_kubernetes_cluster_exceeding_max_age" {
   title         = "Correct one Kubernetes cluster exceeding max age"
   description   = "Runs corrective action on a Kubernetes cluster exceeding max age."
-  // documentation = file("./kubernetes/docs/correct_one_kubernetes_cluster_exceeding_max_age.md")
+  documentation = file("./kubernetes/docs/correct_one_kubernetes_cluster_exceeding_max_age.md")
   tags          = merge(local.kubernetes_common_tags, { class = "unused" })
 
   param "title" {

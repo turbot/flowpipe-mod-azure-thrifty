@@ -19,7 +19,7 @@ locals {
 trigger "query" "detect_and_correct_hdinsight_cluster_exceeding_max_age" {
   title         = "Detect & correct HDInsight clusters exceeding max age"
   description   = "Detects HDInsight clusters exceeding max age and runs your chosen action."
-  // documentation = file("./hdinsight/docs/detect_and_correct_hdinsight_cluster_exceeding_max_age_trigger.md")
+  documentation = file("./hdinsight/docs/detect_and_correct_hdinsight_cluster_exceeding_max_age_trigger.md")
   tags          = merge(local.hdinsight_common_tags, { class = "unused" })
 
   enabled  = var.hdinsight_cluster_exceeding_max_age_trigger_enabled
@@ -38,7 +38,7 @@ trigger "query" "detect_and_correct_hdinsight_cluster_exceeding_max_age" {
 pipeline "detect_and_correct_hdinsight_cluster_exceeding_max_age" {
   title         = "Detect & correct HDInsight clusters exceeding max age"
   description   = "Detects HDInsight clusters exceeding max age and runs your chosen action."
-  // documentation = file("./hdinsight/docs/detect_and_correct_hdinsight_cluster_exceeding_max_age.md")
+  documentation = file("./hdinsight/docs/detect_and_correct_hdinsight_cluster_exceeding_max_age.md")
   tags          = merge(local.hdinsight_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -98,7 +98,7 @@ pipeline "detect_and_correct_hdinsight_cluster_exceeding_max_age" {
 pipeline "correct_hdinsight_cluster_exceeding_max_age" {
   title         = "Correct HDInsight clusters exceeding max age"
   description   = "Runs corrective action on a collection of HDInsight clusters exceeding max age."
-  // documentation = file("./hdinsight/docs/correct_hdinsight_cluster_exceeding_max_age.md")
+  documentation = file("./hdinsight/docs/correct_hdinsight_cluster_exceeding_max_age.md")
   tags          = merge(local.hdinsight_common_tags, { class = "unused" })
 
   param "items" {
@@ -174,7 +174,7 @@ pipeline "correct_hdinsight_cluster_exceeding_max_age" {
 pipeline "correct_one_hdinsight_cluster_exceeding_max_age" {
   title         = "Correct one HDInsight cluster exceeding max age"
   description   = "Runs corrective action on an HDInsight cluster exceeding max age."
-  // documentation = file("./hdinsight/docs/correct_one_hdinsight_cluster_exceeding_max_age.md")
+  documentation = file("./hdinsight/docs/correct_one_hdinsight_cluster_exceeding_max_age.md")
   tags          = merge(local.hdinsight_common_tags, { class = "unused" })
 
   param "title" {

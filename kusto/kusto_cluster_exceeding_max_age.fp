@@ -18,7 +18,7 @@ locals {
 trigger "query" "detect_and_correct_kusto_cluster_exceeding_max_age" {
   title         = "Detect & correct Kusto clusters exceeding max age"
   description   = "Detects Kusto clusters exceeding max age and runs your chosen action."
-  // documentation = file("./kusto/docs/detect_and_correct_kusto_cluster_exceeding_max_age_trigger.md")
+  documentation = file("./kusto/docs/detect_and_correct_kusto_cluster_exceeding_max_age_trigger.md")
   tags          = merge(local.kusto_common_tags, { class = "unused" })
 
   enabled  = var.kusto_cluster_exceeding_max_age_trigger_enabled
@@ -37,7 +37,7 @@ trigger "query" "detect_and_correct_kusto_cluster_exceeding_max_age" {
 pipeline "detect_and_correct_kusto_cluster_exceeding_max_age" {
   title         = "Detect & correct Kusto clusters exceeding max age"
   description   = "Detects Kusto clusters exceeding max age and runs your chosen action."
-  // documentation = file("./kusto/docs/detect_and_correct_kusto_cluster_exceeding_max_age.md")
+  documentation = file("./kusto/docs/detect_and_correct_kusto_cluster_exceeding_max_age.md")
   tags          = merge(local.kusto_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -97,7 +97,7 @@ pipeline "detect_and_correct_kusto_cluster_exceeding_max_age" {
 pipeline "correct_kusto_cluster_exceeding_max_age" {
   title         = "Correct Kusto clusters exceeding max age"
   description   = "Runs corrective action on a collection of Kusto clusters exceeding max age."
-  // documentation = file("./kusto/docs/correct_kusto_cluster_exceeding_max_age.md")
+  documentation = file("./kusto/docs/correct_kusto_cluster_exceeding_max_age.md")
   tags          = merge(local.kusto_common_tags, { class = "unused" })
 
   param "items" {
@@ -173,7 +173,7 @@ pipeline "correct_kusto_cluster_exceeding_max_age" {
 pipeline "correct_one_kusto_cluster_exceeding_max_age" {
   title         = "Correct one Kusto cluster exceeding max age"
   description   = "Runs corrective action on a Kusto cluster exceeding max age."
-  // documentation = file("./kusto/docs/correct_one_kusto_cluster_exceeding_max_age.md")
+  documentation = file("./kusto/docs/correct_one_kusto_cluster_exceeding_max_age.md")
   tags          = merge(local.kusto_common_tags, { class = "unused" })
 
   param "title" {
