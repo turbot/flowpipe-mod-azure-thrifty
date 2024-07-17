@@ -56,4 +56,8 @@ locals {
   azure_pipeline_stop_kusto_cluster                          = azure.pipeline.stop_kusto_cluster
   azure_pipeline_stop_network_application_gateway            = azure.pipeline.stop_network_application_gateway
   azure_pipeline_delete_sql_database                         = azure.pipeline.delete_sql_database
+  azure_pipeline_delete_kusto_cluster                        = azure.pipeline.delete_kusto_cluster
+  azure_pipeline_delete_service_fabric_cluster               = azure.pipeline.delete_service_fabric_cluster
+  azure_pipeline_delete_hdinsight_cluster                    = azure.pipeline.delete_hdinsight_cluster
+  azure_pipeline_delete_kubernetes_cluster                   = azure.pipeline.delete_kubernetes_cluster
 }
