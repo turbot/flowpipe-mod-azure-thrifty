@@ -211,7 +211,6 @@ pipeline "correct_one_network_load_balancer_if_unused" {
   param "cred" {
     type        = string
     description = local.description_credential
-    default     = "default"
   }
 
   param "notifier" {

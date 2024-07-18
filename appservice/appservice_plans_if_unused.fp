@@ -201,7 +201,6 @@ pipeline "correct_one_app_service_plan_if_unused" {
   param "cred" {
     type        = string
     description = local.description_credential
-    default     = "default"
   }
 
   param "notifier" {

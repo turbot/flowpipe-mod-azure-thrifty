@@ -1,6 +1,6 @@
 locals {
   kubernetes_clusters_exceeding_max_age_query = <<-EOQ
-   	select
+    select
 			concat(c.id, ' [', c.resource_group, '/', c.subscription_id, ']') as title,
 			c.name,
 			c.resource_group,

@@ -12,7 +12,7 @@ locals {
       azure_subscription as sub
     where
       subnets is null
-    	and sub.subscription_id = g.subscription_id;
+    and sub.subscription_id = g.subscription_id;
   EOQ
 }
 
@@ -201,7 +201,6 @@ pipeline "correct_one_network_nat_gateway_if_unused" {
   param "cred" {
     type        = string
     description = local.description_credential
-		default     = "default"
   }
 
   param "notifier" {
@@ -222,7 +221,7 @@ pipeline "correct_one_network_nat_gateway_if_unused" {
     default     = var.approvers
   }
 
-   param "default_action" {
+  param "default_action" {
     type        = string
     description = local.description_default_action
     default     = var.network_nat_gateways_if_unused_default_action

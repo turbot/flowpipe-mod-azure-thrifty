@@ -185,7 +185,7 @@ pipeline "correct_one_network_application_gateway_without_autoscaling" {
 
   param "name" {
     type        = string
-    description = "The name of the Network Application Gateway."
+    description = "The name of the Network application gateway."
   }
 
   param "resource_group" {
@@ -201,7 +201,6 @@ pipeline "correct_one_network_application_gateway_without_autoscaling" {
   param "cred" {
     type        = string
     description = local.description_credential
-    default     = "default"
   }
 
   param "notifier" {
@@ -240,7 +239,7 @@ pipeline "correct_one_network_application_gateway_without_autoscaling" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected Network Application Gateway ${param.title} without autoscaling enabled."
+      detect_msg         = "Detected Network application gateway ${param.title} without autoscaling enabled."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -252,7 +251,7 @@ pipeline "correct_one_network_application_gateway_without_autoscaling" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Network Application Gateway ${param.title} without autoscaling enabled."
+            text     = "Skipped Network application gateway ${param.title} without autoscaling enabled."
           }
           success_msg = ""
           error_msg   = ""
@@ -268,8 +267,8 @@ pipeline "correct_one_network_application_gateway_without_autoscaling" {
             subscription_id          = param.subscription_id
             cred                     = param.cred
           }
-          success_msg = "Stopped Network Application Gateway ${param.title}."
-          error_msg   = "Error stopping Network Application Gateway ${param.title}."
+          success_msg = "Stopped Network application gateway ${param.title}."
+          error_msg   = "Error stopping Network application gateway ${param.title}."
         }
       }
     }

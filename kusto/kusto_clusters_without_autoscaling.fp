@@ -201,7 +201,6 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
   param "cred" {
     type        = string
     description = local.description_credential
-    default     = "default"
   }
 
   param "notifier" {

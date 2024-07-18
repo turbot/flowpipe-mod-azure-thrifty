@@ -21,7 +21,7 @@ locals {
 }
 
 trigger "query" "detect_and_correct_compute_virtual_machines_exceeding_max_age" {
-  title         = "Detect & correct Compute Virtual Machines"
+  title         = "Detect & correct Compute virtual machines"
   description   = "Detects Compute VM exceeding max age and runs your chosen action."
   documentation = file("./compute/docs/detect_and_correct_compute_virtual_machines_exceeding_max_age_trigger.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
@@ -40,8 +40,8 @@ trigger "query" "detect_and_correct_compute_virtual_machines_exceeding_max_age" 
 }
 
 pipeline "detect_and_correct_compute_virtual_machines_exceeding_max_age" {
-  title         = "Detect & correct Compute Virtual Machines exceeding max age"
-  description   = "Detects Compute Virtual Machines exceeding max age and runs your chosen action."
+  title         = "Detect & correct Compute virtual machines exceeding max age"
+  description   = "Detects Compute virtual machines exceeding max age and runs your chosen action."
   documentation = file("./compute/docs/detect_and_correct_compute_virtual_machines_exceeding_max_age.md")
   tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
 
@@ -100,8 +100,8 @@ pipeline "detect_and_correct_compute_virtual_machines_exceeding_max_age" {
 }
 
 pipeline "correct_compute_virtual_machines_exceeding_max_age" {
-  title         = "Correct Compute virtual_machines exceeding max age"
-  description   = "Runs corrective action on a collection of Compute virtual_machines exceeding max age."
+  title         = "Correct Compute virtual machines exceeding max age"
+  description   = "Runs corrective action on a collection of Compute virtual machines exceeding max age."
   documentation = file("./compute/docs/correct_compute_virtual_machines_exceeding_max_age.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
@@ -149,7 +149,7 @@ pipeline "correct_compute_virtual_machines_exceeding_max_age" {
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} Compute Virtual Machines exceeding maximum age."
+    text     = "Detected ${length(param.items)} Compute virtual machines exceeding maximum age."
   }
 
   step "transform" "items_by_id" {
@@ -176,8 +176,8 @@ pipeline "correct_compute_virtual_machines_exceeding_max_age" {
 }
 
 pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
-  title         = "Correct one Compute Virtula Machine exceeding max age"
-  description   = "Runs corrective action on an Compute Virtual Machine exceeding max age."
+  title         = "Correct one Compute virtual machine exceeding max age"
+  description   = "Runs corrective action on an Compute virtual machine exceeding max age."
   documentation = file("./compute/docs/correct_one_compute_virtual_machine_exceeding_max_age.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
@@ -188,7 +188,7 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
 
   param "name" {
     type        = string
-    description = "The name of the Compute Virtual Machine."
+    description = "The name of the Compute virtual machine."
   }
 
   param "resource_group" {
@@ -242,7 +242,7 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected Compute Virtual Machine ${param.title} exceeding maximum age."
+      detect_msg         = "Detected Compute virtual machine ${param.title} exceeding maximum age."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -254,13 +254,13 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Compute Virtual Machine ${param.title} exceeding maximum age."
+            text     = "Skipped Compute virtual machine ${param.title} exceeding maximum age."
           }
           success_msg = ""
           error_msg   = ""
         },
         "stop_virtual_machine" = {
-          label        = "Stop virtual_machine"
+          label        = "Stop Virtual Machine"
           value        = "stop_virtual_machine"
           style        = local.style_alert
           pipeline_ref = local.azure_pipeline_stop_compute_virtual_machine
@@ -270,11 +270,11 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
             subscription_id = param.subscription_id
             cred            = param.cred
           }
-          success_msg = "Stopped Compute virtual_machine ${param.title}."
-          error_msg   = "Error stoping Compute virtual_machine ${param.title}."
+          success_msg = "Stopped Compute virtual machine ${param.title}."
+          error_msg   = "Error stoping Compute virtual machine ${param.title}."
         }
         "delete_virtual_machine" = {
-          label        = "Delete virtual_machine"
+          label        = "Delete Virtual Machine"
           value        = "delete_virtual_machine"
           style        = local.style_alert
           pipeline_ref = local.azure_pipeline_delete_compute_virtual_machine
@@ -284,8 +284,8 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
             subscription_id = param.subscription_id
             cred            = param.cred
           }
-          success_msg = "Deleted Compute virtual_machine ${param.title}."
-          error_msg   = "Error deleting Compute virtual_machine ${param.title}."
+          success_msg = "Deleted Compute virtual machine ${param.title}."
+          error_msg   = "Error deleting Compute virtual machine ${param.title}."
         }
       }
     }

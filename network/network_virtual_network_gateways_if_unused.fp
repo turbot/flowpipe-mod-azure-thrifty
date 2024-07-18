@@ -221,7 +221,7 @@ pipeline "correct_one_network_virtual_network_gateway_if_unused" {
     default     = var.approvers
   }
 
-   param "default_action" {
+  param "default_action" {
     type        = string
     description = local.description_default_action
     default     = var.network_virtual_network_gateways_if_unused_default_action

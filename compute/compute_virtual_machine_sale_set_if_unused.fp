@@ -31,8 +31,8 @@ locals {
 }
 
 trigger "query" "detect_and_correct_virtual_machine_scale_sets_if_unused" {
-  title         = "Detect & correct Virtual Machine Scale Sets if unused"
-  description   = "Detects unused Virtual Machine Scale Sets and runs your chosen action."
+  title         = "Detect & correct Compute virtual machine scale sets if unused"
+  description   = "Detects unused Compute virtual machine scale sets and runs your chosen action."
   documentation = file("./compute/docs/detect_and_correct_virtual_machine_scale_sets_if_unused_trigger.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
@@ -50,8 +50,8 @@ trigger "query" "detect_and_correct_virtual_machine_scale_sets_if_unused" {
 }
 
 pipeline "detect_and_correct_virtual_machine_scale_sets_if_unused" {
-  title         = "Detect & correct Virtual Machine Scale Sets if unused"
-  description   = "Detects unused Virtual Machine Scale Sets and runs your chosen action."
+  title         = "Detect & correct Compute virtual machine scale sets if unused"
+  description   = "Detects unused Compute virtual machine scale sets and runs your chosen action."
   documentation = file("./compute/docs/detect_and_correct_virtual_machine_scale_sets_if_unused.md")
   tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
 
@@ -110,8 +110,8 @@ pipeline "detect_and_correct_virtual_machine_scale_sets_if_unused" {
 }
 
 pipeline "correct_virtual_machine_scale_sets_if_unused" {
-  title         = "Correct Virtual Machine Scale Sets if unused"
-  description   = "Runs corrective action on a collection of Virtual Machine Scale Sets which are unused."
+  title         = "Correct Compute virtual machine scale sets if unused"
+  description   = "Runs corrective action on a collection of Compute virtual machine scale sets which are unused."
   documentation = file("./compute/docs/correct_virtual_machine_scale_sets_if_unused.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
@@ -160,7 +160,7 @@ pipeline "correct_virtual_machine_scale_sets_if_unused" {
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} unused Virtual Machine Scale Sets."
+    text     = "Detected ${length(param.items)} unused Compute virtual machine scale sets."
   }
 
   step "transform" "items_by_id" {
@@ -187,8 +187,8 @@ pipeline "correct_virtual_machine_scale_sets_if_unused" {
 }
 
 pipeline "correct_one_virtual_machine_scale_set_if_unused" {
-  title         = "Correct one Virtual Machine Scale Set if unused"
-  description   = "Runs corrective action on a single Virtual Machine Scale Set which is unused."
+  title         = "Correct one Compute virtual machine scale set if unused"
+  description   = "Runs corrective action on a single Compute virtual machine scale set which is unused."
   documentation = file("./compute/docs/correct_one_virtual_machine_scale_set_if_unused.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
@@ -199,7 +199,7 @@ pipeline "correct_one_virtual_machine_scale_set_if_unused" {
 
   param "name" {
     type        = string
-    description = "The name of the Virtual Machine Scale Set."
+    description = "The name of the Compute virtual machine scale set."
   }
 
   param "resource_group" {
@@ -215,7 +215,6 @@ pipeline "correct_one_virtual_machine_scale_set_if_unused" {
   param "cred" {
     type        = string
     description = local.description_credential
-    default     = "default"
   }
 
   param "notifier" {
@@ -254,7 +253,7 @@ pipeline "correct_one_virtual_machine_scale_set_if_unused" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected unused Virtual Machine Scale Set ${param.title}."
+      detect_msg         = "Detected unused Compute virtual machine scale set ${param.title}."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -266,7 +265,7 @@ pipeline "correct_one_virtual_machine_scale_set_if_unused" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Virtual Machine Scale Set ${param.title}."
+            text     = "Skipped Compute virtual machine scale set ${param.title}."
           }
           success_msg = ""
           error_msg   = ""
@@ -282,8 +281,8 @@ pipeline "correct_one_virtual_machine_scale_set_if_unused" {
             subscription_id  = param.subscription_id
             cred             = param.cred
           }
-          success_msg = "Deleted Virtual Machine Scale Set ${param.title}."
-          error_msg   = "Error deleting Virtual Machine Scale Set ${param.title}."
+          success_msg = "Deleted Compute virtual machine scale set ${param.title}."
+          error_msg   = "Error deleting Compute virtual machine scale set ${param.title}."
         }
       }
     }
