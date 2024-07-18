@@ -1,48 +1,43 @@
 locals {
-  compute_virtual_machine_exceeding_max_age_query = <<-EOQ
-  select
-    concat(vm.id,' (', vm.title, ') [', vm.size, '/', vm.region, '/', vm.resource_group, ']') as title,
-    vm.id,
-    vm.name,
-    vm.subscription_id,
-    vm.resource_group,
-    vm.title,
-    vm._ctx ->> 'connection_name' as cred
-  from
-    azure_compute_virtual_machine as vm,
-    jsonb_array_elements(statuses) as s,
-    azure_subscription as sub
-  where
-    sub.subscription_id = vm.subscription_id
-    and vm.power_state in ('running', 'starting')
-    and s ->> 'time' is not null
-    and date_part('day', now() - (s ->> 'time') :: timestamptz) > ${var.compute_running_vm_age_max_days};
+  compute_snapshots_if_storage_premium_query = <<-EOQ
+		select
+			concat(s.id, ' [', s.resource_group, '/', s.subscription_id, ']') as title,
+			s.name,
+			s.resource_group,
+			s.subscription_id,
+			s._ctx ->> 'connection_name' as cred
+		from
+			azure_compute_snapshot as s,
+			azure_subscription as sub
+		where
+			sub.subscription_id = s.subscription_id
+			and s.sku_tier <> 'Standard';
   EOQ
 }
 
-trigger "query" "detect_and_correct_compute_virtual_machines_exceeding_max_age" {
-  title         = "Detect & correct Compute Virtual Machines"
-  description   = "Detects Compute VM exceeding max age and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_correct_compute_virtual_machines_exceeding_max_age_trigger.md")
+trigger "query" "detect_and_correct_compute_snapshots_if_storage_premium" {
+  title         = "Detect & correct Compute snapshots with premium storage"
+  description   = "Detects Compute snapshots with premium storage and runs your chosen action."
+  documentation = file("./compute/docs/detect_and_correct_compute_snapshots_if_storage_premium_trigger.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
-  enabled  = var.compute_virtual_machines_exceeding_max_age_trigger_enabled
-  schedule = var.compute_virtual_machines_exceeding_max_age_trigger_schedule
+  enabled  = var.compute_snapshots_if_storage_premium_trigger_enabled
+  schedule = var.compute_snapshots_if_storage_premium_trigger_schedule
   database = var.database
-  sql      = local.compute_virtual_machine_exceeding_max_age_query
+  sql      = local.compute_snapshots_if_storage_premium_query
 
   capture "insert" {
-    pipeline = pipeline.correct_compute_virtual_machines_exceeding_max_age
+    pipeline = pipeline.correct_compute_snapshots_if_storage_premium
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_correct_compute_virtual_machines_exceeding_max_age" {
-  title         = "Detect & correct Compute Virtual Machines exceeding max age"
-  description   = "Detects Compute Virtual Machines exceeding max age and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_correct_compute_virtual_machines_exceeding_max_age.md")
+pipeline "detect_and_correct_compute_snapshots_if_storage_premium" {
+  title         = "Detect & correct Compute snapshots with premium storage"
+  description   = "Detects Compute snapshots with premium storage and runs your chosen action."
+  documentation = file("./compute/docs/detect_and_correct_compute_snapshots_if_storage_premium.md")
   tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -72,22 +67,22 @@ pipeline "detect_and_correct_compute_virtual_machines_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_virtual_machines_exceeding_max_age_default_action
+    default     = var.compute_snapshots_if_storage_premium_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_virtual_machines_exceeding_max_age_enabled_actions
+    default     = var.compute_snapshots_if_storage_premium_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.compute_virtual_machine_exceeding_max_age_query
+    sql      = local.compute_snapshots_if_storage_premium_query
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.correct_compute_virtual_machines_exceeding_max_age
+    pipeline = pipeline.correct_compute_snapshots_if_storage_premium
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -99,10 +94,10 @@ pipeline "detect_and_correct_compute_virtual_machines_exceeding_max_age" {
   }
 }
 
-pipeline "correct_compute_virtual_machines_exceeding_max_age" {
-  title         = "Correct Compute virtual_machines exceeding max age"
-  description   = "Runs corrective action on a collection of Compute virtual_machines exceeding max age."
-  documentation = file("./compute/docs/correct_compute_virtual_machines_exceeding_max_age.md")
+pipeline "correct_compute_snapshots_if_storage_premium" {
+  title         = "Correct Compute snapshots with premium storage"
+  description   = "Runs corrective action on a collection of Compute snapshots with premium storage."
+  documentation = file("./compute/docs/correct_compute_snapshots_if_storage_premium.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "items" {
@@ -137,29 +132,29 @@ pipeline "correct_compute_virtual_machines_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_virtual_machines_exceeding_max_age_default_action
+    default     = var.compute_snapshots_if_storage_premium_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_virtual_machines_exceeding_max_age_enabled_actions
+    default     = var.compute_snapshots_if_storage_premium_enabled_actions
   }
 
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} Compute Virtual Machines exceeding maximum age."
+    text     = "Detected ${length(param.items)} Compute snapshots with premium storage."
   }
 
   step "transform" "items_by_id" {
-    value = { for row in param.items : row.name => row }
+    value = { for row in param.items : row.title => row }
   }
 
   step "pipeline" "correct_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.correct_one_compute_virtual_machine_exceeding_max_age
+    pipeline        = pipeline.correct_one_compute_snapshot_if_storage_premium
     args = {
       title              = each.value.title
       name               = each.value.name
@@ -175,10 +170,10 @@ pipeline "correct_compute_virtual_machines_exceeding_max_age" {
   }
 }
 
-pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
-  title         = "Correct one Compute Virtula Machine exceeding max age"
-  description   = "Runs corrective action on an Compute Virtual Machine exceeding max age."
-  documentation = file("./compute/docs/correct_one_compute_virtual_machine_exceeding_max_age.md")
+pipeline "correct_one_compute_snapshot_if_storage_premium" {
+  title         = "Correct one Compute snapshot with premium storage"
+  description   = "Runs corrective action on a Compute snapshot with premium storage."
+  documentation = file("./compute/docs/correct_one_compute_snapshot_if_storage_premium.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "title" {
@@ -188,7 +183,7 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
 
   param "name" {
     type        = string
-    description = "The name of the Compute Virtual Machine."
+    description = "The name of the Compute snapshot."
   }
 
   param "resource_group" {
@@ -227,13 +222,13 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_virtual_machines_exceeding_max_age_default_action
+    default     = var.compute_snapshots_if_storage_premium_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_virtual_machines_exceeding_max_age_enabled_actions
+    default     = var.compute_snapshots_if_storage_premium_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -242,7 +237,7 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected Compute Virtual Machine ${param.title} exceeding maximum age."
+      detect_msg         = "Detected Compute snapshot ${param.title} is using premium storage."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -254,70 +249,51 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Compute Virtual Machine ${param.title} exceeding maximum age."
+            text     = "Skipped Compute snapshots ${param.title} with premium storage."
           }
           success_msg = ""
           error_msg   = ""
         },
-        "stop_virtual_machine" = {
-          label        = "Stop virtual_machine"
-          value        = "stop_virtual_machine"
+        "update_snapshot_sku" = {
+          label        = "Update Snapshot SKU"
+          value        = "update_snapshot_sku"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_stop_compute_virtual_machine
+          pipeline_ref = local.azure_pipeline_update_compute_snapshot
           pipeline_args = {
-            vm_name         = param.name
+            snapshot_name   = param.name
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
+						sku             = "Standard_LRS"
             cred            = param.cred
           }
-          success_msg = "Stopped Compute virtual_machine ${param.title}."
-          error_msg   = "Error stoping Compute virtual_machine ${param.title}."
-        }
-        "delete_virtual_machine" = {
-          label        = "Delete virtual_machine"
-          value        = "delete_virtual_machine"
-          style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_compute_virtual_machine
-          pipeline_args = {
-            vm_name         = param.name
-            resource_group  = param.resource_group
-            subscription_id = param.subscription_id
-            cred            = param.cred
-          }
-          success_msg = "Deleted Compute virtual_machine ${param.title}."
-          error_msg   = "Error deleting Compute virtual_machine ${param.title}."
-        }
+          success_msg = "Updated Compute snapshot ${param.title}."
+          error_msg   = "Error updating Compute snapshot ${param.title}."
+        },
       }
     }
   }
 }
 
-variable "compute_virtual_machines_exceeding_max_age_trigger_enabled" {
+variable "compute_snapshots_if_storage_premium_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "compute_virtual_machines_exceeding_max_age_trigger_schedule" {
+variable "compute_snapshots_if_storage_premium_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
 }
 
-variable "compute_virtual_machines_exceeding_max_age_default_action" {
+variable "compute_snapshots_if_storage_premium_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
 }
 
-variable "compute_virtual_machines_exceeding_max_age_enabled_actions" {
+variable "compute_snapshots_if_storage_premium_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_virtual_machine"]
-}
-
-variable "compute_running_vm_age_max_days" {
-  type        = number
-  description = "The maximum number of days Compute VM can be retained."
-  default     = 90
+  default     = ["skip", "update_snapshot_sku"]
 }

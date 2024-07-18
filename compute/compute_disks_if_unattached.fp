@@ -157,7 +157,7 @@ pipeline "correct_compute_disks_if_unattached" {
   step "pipeline" "correct_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.correct_one_compute_disks_if_unattached
+    pipeline        = pipeline.correct_one_compute_disk_if_unattached
     args = {
       title              = each.value.title
       name               = each.value.name
@@ -174,10 +174,10 @@ pipeline "correct_compute_disks_if_unattached" {
   }
 }
 
-pipeline "correct_one_compute_disks_if_unattached" {
+pipeline "correct_one_compute_disk_if_unattached" {
   title         = "Correct one Compute disk unattached"
   description   = "Runs corrective action on an Compute disk unattached."
-  documentation = file("./compute/docs/correct_one_compute_disks_if_unattached.md")
+  documentation = file("./compute/docs/correct_one_compute_disk_if_unattached.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "title" {
@@ -353,7 +353,7 @@ pipeline "snapshot_and_delete_compute_disk" {
 
   step "container" "create_compute_disk_snapshot" {
     image = "ghcr.io/turbot/flowpipe-image-azure-cli"
-    cmd   = [
+    cmd = [
       "snapshot", "create",
       "-g", param.resource_group,
       "-n", param.snapshot_name,
@@ -366,8 +366,8 @@ pipeline "snapshot_and_delete_compute_disk" {
 
   step "container" "delete_compute_disk" {
     depends_on = [step.container.create_compute_disk_snapshot]
-    image = "ghcr.io/turbot/flowpipe-image-azure-cli"
-    cmd   = ["disk", "delete", "--yes", "-g", param.resource_group, "-n", param.disk_name, "--subscription", param.subscription_id]
+    image      = "ghcr.io/turbot/flowpipe-image-azure-cli"
+    cmd        = ["disk", "delete", "--yes", "-g", param.resource_group, "-n", param.disk_name, "--subscription", param.subscription_id]
 
     env = credential.azure[param.cred].env
   }

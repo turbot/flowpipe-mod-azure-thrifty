@@ -1,5 +1,5 @@
 locals {
-  compute_disk_with_high_iops_query = <<-EOQ
+  compute_disks_with_high_iops_query = <<-EOQ
     select
       concat(d.id, ' [', d.resource_group, '/', d.subscription_id, ']') as title,
       d.id as resource,
@@ -16,29 +16,29 @@ locals {
   EOQ
 }
 
-trigger "query" "detect_and_correct_compute_disk_with_high_iops" {
-  title         = "Detect & correct Compute Disks with high IOPS"
-  description   = "Detects Compute Disks with high IOPS and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_correct_compute_disk_with_high_iops_trigger.md")
+trigger "query" "detect_and_correct_compute_disks_with_high_iops" {
+  title         = "Detect & correct Compute disks with high IOPS"
+  description   = "Detects Compute disks with high IOPS and runs your chosen action."
+  documentation = file("./compute/docs/detect_and_correct_compute_disks_with_high_iops_trigger.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
-  enabled  = var.compute_disk_with_high_iops_trigger_enabled
-  schedule = var.compute_disk_with_high_iops_trigger_schedule
+  enabled  = var.compute_disks_with_high_iops_trigger_enabled
+  schedule = var.compute_disks_with_high_iops_trigger_schedule
   database = var.database
-  sql      = local.compute_disk_with_high_iops_query
+  sql      = local.compute_disks_with_high_iops_query
 
   capture "insert" {
-    pipeline = pipeline.correct_compute_disk_with_high_iops
+    pipeline = pipeline.correct_compute_disks_with_high_iops
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_correct_compute_disk_with_high_iops" {
-  title         = "Detect & correct Compute Disks with high IOPS"
-  description   = "Detects Compute Disks with high IOPS and runs your chosen action."
-  documentation = file("./compute/docs/detect_and_correct_compute_disk_with_high_iops.md")
+pipeline "detect_and_correct_compute_disks_with_high_iops" {
+  title         = "Detect & correct Compute disks with high IOPS"
+  description   = "Detects Compute disks with high IOPS and runs your chosen action."
+  documentation = file("./compute/docs/detect_and_correct_compute_disks_with_high_iops.md")
   tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -68,22 +68,22 @@ pipeline "detect_and_correct_compute_disk_with_high_iops" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_disk_with_high_iops_default_action
+    default     = var.compute_disks_with_high_iops_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_disk_with_high_iops_enabled_actions
+    default     = var.compute_disks_with_high_iops_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.compute_disk_with_high_iops_query
+    sql      = local.compute_disks_with_high_iops_query
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.correct_compute_disk_with_high_iops
+    pipeline = pipeline.correct_compute_disks_with_high_iops
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -95,10 +95,10 @@ pipeline "detect_and_correct_compute_disk_with_high_iops" {
   }
 }
 
-pipeline "correct_compute_disk_with_high_iops" {
-  title         = "Correct Compute Disks with high IOPS"
-  description   = "Runs corrective action on a collection of Compute Disks with high IOPS."
-  documentation = file("./compute/docs/correct_compute_disk_with_high_iops.md")
+pipeline "correct_compute_disks_with_high_iops" {
+  title         = "Correct Compute disks with high IOPS"
+  description   = "Runs corrective action on a collection of Compute disks with high IOPS."
+  documentation = file("./compute/docs/correct_compute_disks_with_high_iops.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "items" {
@@ -133,19 +133,19 @@ pipeline "correct_compute_disk_with_high_iops" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_disk_with_high_iops_default_action
+    default     = var.compute_disks_with_high_iops_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_disk_with_high_iops_enabled_actions
+    default     = var.compute_disks_with_high_iops_enabled_actions
   }
 
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} Compute Disks with high IOPS."
+    text     = "Detected ${length(param.items)} Compute disks with high IOPS."
   }
 
   step "transform" "items_by_id" {
@@ -173,8 +173,8 @@ pipeline "correct_compute_disk_with_high_iops" {
 }
 
 pipeline "correct_one_compute_disk_with_high_iops" {
-  title         = "Correct one Compute Disk with high IOPS"
-  description   = "Runs corrective action on a single Compute Disk with high IOPS."
+  title         = "Correct one Compute disk with high IOPS"
+  description   = "Runs corrective action on a single Compute disk with high IOPS."
   documentation = file("./compute/docs/correct_one_compute_disk_with_high_iops.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
@@ -235,7 +235,7 @@ pipeline "correct_one_compute_disk_with_high_iops" {
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.compute_disk_with_high_iops_enabled_actions
+    default     = var.compute_disks_with_high_iops_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -295,25 +295,25 @@ pipeline "correct_one_compute_disk_with_high_iops" {
   }
 }
 
-variable "compute_disk_with_high_iops_enabled_actions" {
+variable "compute_disks_with_high_iops_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
   default     = ["skip", "snapshot_and_delete_disk", "delete_disk"]
 }
 
-variable "compute_disk_with_high_iops_default_action" {
+variable "compute_disks_with_high_iops_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
 }
 
-variable "compute_disk_with_high_iops_trigger_enabled" {
+variable "compute_disks_with_high_iops_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "compute_disk_with_high_iops_trigger_schedule" {
+variable "compute_disks_with_high_iops_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."

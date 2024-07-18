@@ -101,8 +101,8 @@ locals {
 }
 
 trigger "query" "detect_and_correct_compute_virtual_machines_with_low_utilization" {
-  title         = "Detect & correct compute virtual machine with low utilization"
-  description   = "Detects compute virtual machines with low utilization and runs your chosen action."
+  title         = "Detect & correct Compute virtual machine with low utilization"
+  description   = "Detects Compute virtual machines with low utilization and runs your chosen action."
   // documentation = file("./compute/docs/detect_and_correct_compute_virtual_machines_with_low_utilization_trigger.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
@@ -120,8 +120,8 @@ trigger "query" "detect_and_correct_compute_virtual_machines_with_low_utilizatio
 }
 
 pipeline "detect_and_correct_compute_virtual_machines_with_low_utilization" {
-  title         = "Detect & correct compute virtual machines with low utilization"
-  description   = "Detects compute virtual machines with low utilization and runs your chosen action."
+  title         = "Detect & correct Compute virtual machines with low utilization"
+  description   = "Detects Compute virtual machines with low utilization and runs your chosen action."
   // documentation = file("./compute/docs/detect_and_correct_compute_virtual_machines_with_low_utilization.md")
   tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
 
@@ -180,8 +180,8 @@ pipeline "detect_and_correct_compute_virtual_machines_with_low_utilization" {
 }
 
 pipeline "correct_compute_virtual_machines_with_low_utilization" {
-  title         = "Correct compute virtual machines with low utilization"
-  description   = "Corrects compute virtual machines with low utilization based on the chosen action."
+  title         = "Correct Compute virtual machines with low utilization"
+  description   = "Corrects Compute virtual machines with low utilization based on the chosen action."
   // documentation = file("./compute/docs/correct_compute_virtual_machines_with_low_utilization.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
@@ -232,7 +232,7 @@ pipeline "correct_compute_virtual_machines_with_low_utilization" {
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} compute virtual machines without graviton processor."
+    text     = "Detected ${length(param.items)} Compute virtual machines without graviton processor."
   }
 
   step "transform" "items_by_id" {
@@ -263,8 +263,8 @@ pipeline "correct_compute_virtual_machines_with_low_utilization" {
 }
 
 pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
-  title         = "Correct one compute virtual machine with low utilization"
-  description   = "Runs corrective action on a single compute virtual machine with low utilization."
+  title         = "Correct one Compute virtual machine with low utilization"
+  description   = "Runs corrective action on a single Compute virtual machine with low utilization."
   // documentation = file("./compute/docs/correct_one_compute virtual machine_with_low_utilization.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
@@ -275,7 +275,7 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
 
   param "id" {
     type        = string
-    description = "The ID of the compute virtual machine."
+    description = "The ID of the Compute virtual machine."
   }
 
   param "resource_group" {
@@ -295,17 +295,17 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
 
   param "current_type" {
     type        = string
-    description = "The current compute virtual machine type."
+    description = "The current Compute virtual machine type."
   }
 
   param "suggested_type" {
     type        = string
-    description = "The suggested compute virtual machine type."
+    description = "The suggested Compute virtual machine type."
   }
 
   param "region" {
     type        = string
-    description = "The region of the compute virtual machine."
+    description = "The region of the Compute virtual machine."
   }
 
   param "cred" {
@@ -353,10 +353,10 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
         pipeline_args = {
           notifier = param.notifier
           send     = param.notification_level == local.level_verbose
-          text     = "Skipped compute virtual machine ${param.title} with low utilization."
+          text     = "Skipped Compute virtual machine ${param.title} with low utilization."
         }
-        success_msg = "Skipping compute virtual machine ${param.title}."
-        error_msg   = "Error skipping compute virtual machine ${param.title}."
+        success_msg = "Skipping Compute virtual machine ${param.title}."
+        error_msg   = "Error skipping Compute virtual machine ${param.title}."
       },
       "stop_virtual_machine" = {
         label        = "Stop virtual_machine"
@@ -391,8 +391,8 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
             new_size        = param.suggested_type
             cred            = param.cred
           }
-          success_msg = "Downgraded compute virtual machine ${param.title} from ${param.current_type} to ${param.suggested_type}."
-          error_msg   = "Error downgrading compute virtual machine ${param.title} type to ${param.suggested_type}."
+          success_msg = "Downgraded Compute virtual machine ${param.title} from ${param.current_type} to ${param.suggested_type}."
+          error_msg   = "Error downgrading Compute virtual machine ${param.title} type to ${param.suggested_type}."
         }
       }
     )
@@ -404,7 +404,7 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected compute virtual machine ${param.title} with low utilization."
+      detect_msg         = "Detected Compute virtual machine ${param.title} with low utilization."
       default_action     = param.default_action
       enabled_actions    = [for action in param.enabled_actions : action if contains(keys(step.transform.build_all_actions.value), action)]
       actions            = step.transform.build_all_actions.value
@@ -460,6 +460,6 @@ pipeline "mock_update_compute_virtual_machine_type" {
   }
 
   step "transform" "mock" {
-    value = "Mocked update compute virtual machine type for ${param.instance_id} to ${param.instance_type}."
+    value = "Mocked update Compute virtual machine type for ${param.instance_id} to ${param.instance_type}."
   }
 }
