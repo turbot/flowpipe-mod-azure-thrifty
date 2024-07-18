@@ -4,7 +4,7 @@
 
 Compute disks can be quite costly to retain, it is also likely that after a certain point in time they're no longer required and should be cleaned up to prevent further costs.
 
-This pipeline detects unused health checks and then either sends a notification or attempts to perform a predefined corrective action.
+This pipeline detects compute disks attached to stopped virtual machine and then either sends a notification or attempts to perform a predefined corrective action.
 
 ## Getting Started
 

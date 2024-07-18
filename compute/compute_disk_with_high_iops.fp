@@ -19,7 +19,7 @@ locals {
 trigger "query" "detect_and_correct_compute_disk_with_high_iops" {
   title         = "Detect & correct Compute Disks with high IOPS"
   description   = "Detects Compute Disks with high IOPS and runs your chosen action."
-  //documentation = file("./compute/docs/detect_and_correct_compute_disk_with_high_iops_trigger.md")
+  documentation = file("./compute/docs/detect_and_correct_compute_disk_with_high_iops_trigger.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   enabled  = var.compute_disk_with_high_iops_trigger_enabled
@@ -38,7 +38,7 @@ trigger "query" "detect_and_correct_compute_disk_with_high_iops" {
 pipeline "detect_and_correct_compute_disk_with_high_iops" {
   title         = "Detect & correct Compute Disks with high IOPS"
   description   = "Detects Compute Disks with high IOPS and runs your chosen action."
-  //documentation = file("./compute/docs/detect_and_correct_compute_disk_with_high_iops.md")
+  documentation = file("./compute/docs/detect_and_correct_compute_disk_with_high_iops.md")
   tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -98,7 +98,7 @@ pipeline "detect_and_correct_compute_disk_with_high_iops" {
 pipeline "correct_compute_disk_with_high_iops" {
   title         = "Correct Compute Disks with high IOPS"
   description   = "Runs corrective action on a collection of Compute Disks with high IOPS."
-  //documentation = file("./compute/docs/correct_compute_disk_with_high_iops.md")
+  documentation = file("./compute/docs/correct_compute_disk_with_high_iops.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "items" {
@@ -175,7 +175,7 @@ pipeline "correct_compute_disk_with_high_iops" {
 pipeline "correct_one_compute_disk_with_high_iops" {
   title         = "Correct one Compute Disk with high IOPS"
   description   = "Runs corrective action on a single Compute Disk with high IOPS."
-  //documentation = file("./compute/docs/correct_one_compute_disk_with_high_iops.md")
+  documentation = file("./compute/docs/correct_one_compute_disk_with_high_iops.md")
   tags          = merge(local.compute_common_tags, { class = "unused" })
 
   param "title" {

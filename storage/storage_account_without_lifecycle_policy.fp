@@ -12,7 +12,7 @@ locals {
       azure_storage_account as ac
       left join azure_subscription as sub on ac.subscription_id = sub.subscription_id
     where
-      (ac.lifecycle_management_policy -> 'properties' -> 'policy' -> 'rules') is null limit 1;
+      (ac.lifecycle_management_policy -> 'properties' -> 'policy' -> 'rules') is null;
   EOQ
 }
 

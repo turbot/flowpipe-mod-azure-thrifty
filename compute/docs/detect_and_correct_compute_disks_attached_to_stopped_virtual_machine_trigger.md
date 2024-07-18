@@ -4,7 +4,7 @@
 
 Compute disk can be attached to stopped virtual machine which can cost money. Detaching compute disks from stopped virtual machines can significantly reduce storage costs by eliminating charges for unused disk storage.
 
-This query trigger detects unused health checks and then either sends a notification or attempts to perform a predefined corrective action.
+This query trigger detects compute disks attached to stopped virtual machine and then either sends a notification or attempts to perform a predefined corrective action.
 
 ### Getting Started
 

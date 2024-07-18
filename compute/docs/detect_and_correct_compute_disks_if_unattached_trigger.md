@@ -4,7 +4,7 @@
 
 Managing unattached disks is crucial for cost efficiency, as they continue to incur charges while not actively contributing to operational workloads. Regularly identifying and managing these resources can help optimize storage costs and organizational efficiency in Azure.
 
-This query trigger detects unused health checks and then either sends a notification or attempts to perform a predefined corrective action.
+This query trigger detects unattached compute disks and then either sends a notification or attempts to perform a predefined corrective action.
 
 ### Getting Started
 

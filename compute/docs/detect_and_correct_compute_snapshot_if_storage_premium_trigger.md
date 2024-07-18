@@ -4,7 +4,7 @@
 
 Migrating compute snapshot storage from premium to standard can lead to significant cost savings. Premium storage is more expensive due to its higher performance and reliability. By moving snapshots that do not require premium performance to standard storage, you can optimize costs without compromising on essential storage needs.
 
-This pipeline allows you to specify a collection of Compute snapshots with premium storage and then either send notifications or attempt to perform a predefined corrective action upon the collection.
+This pipeline allows you to specify a collection of compute snapshots with premium storage and then either send notifications or attempt to perform a predefined corrective action upon the collection.
 
 ### Getting Started
 

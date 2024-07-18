@@ -4,7 +4,7 @@
 
 Compute virtual machine can be quite costly to retain, it is also likely that after a certain point in time they're no longer required and should be cleaned up to prevent further costs.
 
-This query trigger detects unused health checks and then either sends a notification or attempts to perform a predefined corrective action.
+This query trigger detects virtual machines exceeding max age and then either sends a notification or attempts to perform a predefined corrective action.
 
 ### Getting Started
 

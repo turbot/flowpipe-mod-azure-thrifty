@@ -6,7 +6,6 @@ Migrating compute snapshot storage from premium to standard can lead to signific
 
 This pipeline allows you to specify a collection of Compute snapshots with premium storage and then either send notifications or attempt to perform a predefined corrective action upon the collection.
 
-
 ## Getting Started
 
 This control will work out-of-the-box with some sensible defaults (configurable via [variables](https://flowpipe.io/docs/build/mod-variables)).
