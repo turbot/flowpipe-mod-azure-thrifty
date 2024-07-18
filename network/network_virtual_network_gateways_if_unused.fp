@@ -290,7 +290,7 @@ variable "network_virtual_network_gateways_if_unused_trigger_schedule" {
 variable "network_virtual_network_gateways_if_unused_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
-  default     = "delete_network_gateway"
+  default     = "notify"
 }
 
 variable "network_virtual_network_gateways_if_unused_enabled_actions" {

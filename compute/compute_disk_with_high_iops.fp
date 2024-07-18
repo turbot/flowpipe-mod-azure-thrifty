@@ -304,7 +304,7 @@ variable "compute_disk_with_high_iops_enabled_actions" {
 variable "compute_disk_with_high_iops_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
-  default     = "snapshot_and_delete_disk"
+  default     = "notify"
 }
 
 variable "compute_disk_with_high_iops_trigger_enabled" {

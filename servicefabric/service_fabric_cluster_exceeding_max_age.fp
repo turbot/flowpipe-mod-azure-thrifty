@@ -288,7 +288,7 @@ variable "service_fabric_cluster_exceeding_max_age_trigger_schedule" {
 variable "service_fabric_cluster_exceeding_max_age_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
-  default     = "delete_cluster"
+  default     = "notify"
 }
 
 variable "service_fabric_cluster_exceeding_max_age_enabled_actions" {

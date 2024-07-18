@@ -433,7 +433,7 @@ variable "compute_virtual_machines_with_low_utilization_trigger_schedule" {
 variable "compute_virtual_machines_with_low_utilization_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
-  default     = "stop_virtual_machine"
+  default     = "notify"
 }
 
 variable "compute_virtual_machines_with_low_utilization_enabled_actions" {

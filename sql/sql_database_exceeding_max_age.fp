@@ -19,7 +19,7 @@ locals {
 trigger "query" "detect_and_correct_sql_database_exceeding_max_age" {
   title         = "Detect & correct SQL Databases exceeding max age"
   description   = "Detects SQL Databases exceeding max age and runs your chosen action."
-  // documentation = file("./sql/docs/detect_and_correct_sql_database_exceeding_max_age_trigger.md")
+  documentation = file("./sql/docs/detect_and_correct_sql_database_exceeding_max_age_trigger.md")
   tags          = merge(local.sql_common_tags, { class = "unused" })
 
   enabled  = var.sql_database_exceeding_max_age_trigger_enabled

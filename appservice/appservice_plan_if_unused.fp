@@ -291,7 +291,7 @@ variable "app_service_plans_if_unused_trigger_schedule" {
 variable "app_service_plans_if_unused_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
-  default     = "delete_app_service_plan"
+  default     = "notify"
 }
 
 variable "app_service_plans_if_unused_enabled_actions" {

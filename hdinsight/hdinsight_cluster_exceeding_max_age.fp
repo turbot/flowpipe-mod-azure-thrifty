@@ -11,8 +11,7 @@ locals {
 			join azure_resource as r on lower(c.id) = lower(r.id)
 			join azure_subscription as sub on sub.subscription_id = c.subscription_id
 		where
-			date_part('day', now()-created_time) = 0
-			-- > ${var.hdinsight_cluster_exceeding_max_age_days};
+			date_part('day', now()-created_time) > ${var.hdinsight_cluster_exceeding_max_age_days};
   EOQ
 }
 
@@ -289,7 +288,7 @@ variable "hdinsight_cluster_exceeding_max_age_trigger_schedule" {
 variable "hdinsight_cluster_exceeding_max_age_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
-  default     = "delete_cluster"
+  default     = "notify"
 }
 
 variable "hdinsight_cluster_exceeding_max_age_enabled_actions" {
