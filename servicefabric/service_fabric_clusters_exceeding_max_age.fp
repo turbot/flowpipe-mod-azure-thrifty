@@ -1,45 +1,44 @@
 locals {
-  sql_database_exceeding_max_age_query = <<-EOQ
+  service_fabric_clusters_exceeding_max_age_query = <<-EOQ
     select
-      concat(db.id, ' [', db.resource_group, '/', db.subscription_id, ']') as title,
-      db.name,
-      db.resource_group,
-      db.subscription_id,
-			db.server_name as server_name,
-      db._ctx ->> 'connection_name' as cred
+      concat(c.id, ' [', c.resource_group, '/', c.subscription_id, ']') as title,
+      c.name,
+      c.resource_group,
+      c.subscription_id,
+      c._ctx ->> 'connection_name' as cred
     from
-      azure_sql_database as db,
-      azure_subscription as sub
+      azure_service_fabric_cluster as c
+      join azure_resource as r on lower(c.id) = lower(r.id)
+      join azure_subscription as sub on sub.subscription_id = c.subscription_id
     where
-      date_part('day', now() - creation_date) > ${var.sql_database_exceeding_max_age_days}
-      and sub.subscription_id = db.subscription_id;
+      date_part('day', now()-created_time) > ${var.service_fabric_clusters_exceeding_max_age_days};
   EOQ
 }
 
-trigger "query" "detect_and_correct_sql_database_exceeding_max_age" {
-  title         = "Detect & correct SQL Databases exceeding max age"
-  description   = "Detects SQL Databases exceeding max age and runs your chosen action."
-  documentation = file("./sql/docs/detect_and_correct_sql_database_exceeding_max_age_trigger.md")
-  tags          = merge(local.sql_common_tags, { class = "unused" })
+trigger "query" "detect_and_correct_service_fabric_clusters_exceeding_max_age" {
+  title         = "Detect & correct Service Fabric clusters exceeding max age"
+  description   = "Detects Service Fabric clusters exceeding max age and runs your chosen action."
+  documentation = file("./servicefabric/docs/detect_and_correct_service_fabric_clusters_exceeding_max_age_trigger.md")
+  // tags          = merge(local.service_fabric_common_tags, { class = "unused" })
 
-  enabled  = var.sql_database_exceeding_max_age_trigger_enabled
-  schedule = var.sql_database_exceeding_max_age_trigger_schedule
+  enabled  = var.service_fabric_clusters_exceeding_max_age_trigger_enabled
+  schedule = var.service_fabric_clusters_exceeding_max_age_trigger_schedule
   database = var.database
-  sql      = local.sql_database_exceeding_max_age_query
+  sql      = local.service_fabric_clusters_exceeding_max_age_query
 
   capture "insert" {
-    pipeline = pipeline.correct_sql_database_exceeding_max_age
+    pipeline = pipeline.correct_service_fabric_clusters_exceeding_max_age
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_correct_sql_database_exceeding_max_age" {
-  title         = "Detect & correct SQL Databases exceeding max age"
-  description   = "Detects SQL Databases exceeding max age and runs your chosen action."
-  // documentation = file("./sql/docs/detect_and_correct_sql_database_exceeding_max_age.md")
-  tags          = merge(local.sql_common_tags, { class = "unused", type = "featured" })
+pipeline "detect_and_correct_service_fabric_clusters_exceeding_max_age" {
+  title         = "Detect & correct Service Fabric clusters exceeding max age"
+  description   = "Detects Service Fabric clusters exceeding max age and runs your chosen action."
+  documentation = file("./servicefabric/docs/detect_and_correct_service_fabric_clusters_exceeding_max_age.md")
+  // tags          = merge(local.service_fabric_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
     type        = string
@@ -68,22 +67,22 @@ pipeline "detect_and_correct_sql_database_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.sql_database_exceeding_max_age_default_action
+    default     = var.service_fabric_clusters_exceeding_max_age_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.sql_database_exceeding_max_age_enabled_actions
+    default     = var.service_fabric_clusters_exceeding_max_age_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.sql_database_exceeding_max_age_query
+    sql      = local.service_fabric_clusters_exceeding_max_age_query
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.correct_sql_database_exceeding_max_age
+    pipeline = pipeline.correct_service_fabric_clusters_exceeding_max_age
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -95,18 +94,17 @@ pipeline "detect_and_correct_sql_database_exceeding_max_age" {
   }
 }
 
-pipeline "correct_sql_database_exceeding_max_age" {
-  title         = "Correct SQL Databases exceeding max age"
-  description   = "Runs corrective action on a collection of SQL Databases exceeding max age."
-  // documentation = file("./sql/docs/correct_sql_database_exceeding_max_age.md")
-  tags          = merge(local.sql_common_tags, { class = "unused" })
+pipeline "correct_service_fabric_clusters_exceeding_max_age" {
+  title         = "Correct Service Fabric clusters exceeding max age"
+  description   = "Runs corrective action on a collection of Service Fabric clusters exceeding max age."
+  documentation = file("./servicefabric/docs/correct_service_fabric_clusters_exceeding_max_age.md")
+  // tags          = merge(local.service_fabric_common_tags, { class = "unused" })
 
   param "items" {
     type = list(object({
       title           = string
       name            = string
       resource_group  = string
-			server_name     = string
       subscription_id = string
       cred            = string
     }))
@@ -134,19 +132,19 @@ pipeline "correct_sql_database_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.sql_database_exceeding_max_age_default_action
+    default     = var.service_fabric_clusters_exceeding_max_age_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.sql_database_exceeding_max_age_enabled_actions
+    default     = var.service_fabric_clusters_exceeding_max_age_enabled_actions
   }
 
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} SQL Databases exceeding maximum age."
+    text     = "Detected ${length(param.items)} Service Fabric clusters exceeding maximum age."
   }
 
   step "transform" "items_by_id" {
@@ -156,12 +154,11 @@ pipeline "correct_sql_database_exceeding_max_age" {
   step "pipeline" "correct_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.correct_one_sql_database_exceeding_max_age
+    pipeline        = pipeline.correct_one_service_fabric_cluster_exceeding_max_age
     args = {
       title              = each.value.title
       name               = each.value.name
       resource_group     = each.value.resource_group
-			server_name        = each.value.server_name
       subscription_id    = each.value.subscription_id
       cred               = each.value.cred
       notifier           = param.notifier
@@ -173,11 +170,11 @@ pipeline "correct_sql_database_exceeding_max_age" {
   }
 }
 
-pipeline "correct_one_sql_database_exceeding_max_age" {
-  title         = "Correct one SQL Database exceeding max age"
-  description   = "Runs corrective action on an SQL Database exceeding max age."
-  // documentation = file("./sql/docs/correct_one_sql_database_exceeding_max_age.md")
-  tags          = merge(local.sql_common_tags, { class = "unused" })
+pipeline "correct_one_service_fabric_cluster_exceeding_max_age" {
+  title         = "Correct one Service Fabric cluster exceeding max age"
+  description   = "Runs corrective action on a Service Fabric cluster exceeding max age."
+  documentation = file("./servicefabric/docs/correct_one_service_fabric_cluster_exceeding_max_age.md")
+  // tags          = merge(local.service_fabric_common_tags, { class = "unused" })
 
   param "title" {
     type        = string
@@ -186,18 +183,13 @@ pipeline "correct_one_sql_database_exceeding_max_age" {
 
   param "name" {
     type        = string
-    description = "The name of the SQL Database."
+    description = "The name of the Service Fabric cluster."
   }
 
   param "resource_group" {
     type        = string
     description = local.description_resource_group
   }
-
-	param "server_name" {
-		type        = string
-		description = "The name of the server."
-	}
 
   param "subscription_id" {
     type        = string
@@ -230,13 +222,13 @@ pipeline "correct_one_sql_database_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.sql_database_exceeding_max_age_default_action
+    default     = var.service_fabric_clusters_exceeding_max_age_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.sql_database_exceeding_max_age_enabled_actions
+    default     = var.service_fabric_clusters_exceeding_max_age_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -245,7 +237,7 @@ pipeline "correct_one_sql_database_exceeding_max_age" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected SQL Database ${param.title} exceeding maximum age."
+      detect_msg         = "Detected Service Fabric cluster ${param.title} exceeding maximum age."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -257,57 +249,56 @@ pipeline "correct_one_sql_database_exceeding_max_age" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped SQL Database ${param.title} exceeding maximum age."
+            text     = "Skipped Service Fabric cluster ${param.title} exceeding maximum age."
           }
           success_msg = ""
           error_msg   = ""
         },
-        "delete_sql_database" = {
-          label        = "Delete SQL Database"
-          value        = "delete_sql_database"
+        "delete_cluster" = {
+          label        = "Delete Cluster"
+          value        = "delete_cluster"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_sql_database
+          pipeline_ref = local.azure_pipeline_delete_service_fabric_cluster
           pipeline_args = {
-            database_name   = param.name
-            resource_group  = param.resource_group
-						server_name     = param.server_name
-            subscription_id = param.subscription_id
-            cred            = param.cred
+            cluster_name     = param.name
+            resource_group   = param.resource_group
+            subscription_id  = param.subscription_id
+            cred             = param.cred
           }
-          success_msg = "Deleted SQL Database ${param.title}."
-          error_msg   = "Error deleting SQL Database ${param.title}."
+          success_msg = "Deleted Service Fabric cluster ${param.title}."
+          error_msg   = "Error deleting Service Fabric cluster ${param.title}."
         }
       }
     }
   }
 }
 
-variable "sql_database_exceeding_max_age_trigger_enabled" {
+variable "service_fabric_clusters_exceeding_max_age_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "sql_database_exceeding_max_age_trigger_schedule" {
+variable "service_fabric_clusters_exceeding_max_age_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
 }
 
-variable "sql_database_exceeding_max_age_default_action" {
+variable "service_fabric_clusters_exceeding_max_age_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
 }
 
-variable "sql_database_exceeding_max_age_enabled_actions" {
+variable "service_fabric_clusters_exceeding_max_age_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_sql_database"]
+  default     = ["skip", "delete_cluster"]
 }
 
-variable "sql_database_exceeding_max_age_days" {
+variable "service_fabric_clusters_exceeding_max_age_days" {
   type        = number
-  description = "The maximum number of days SQL Databases can be retained."
+  description = "The maximum number of days Service Fabric clusters can be retained."
   default     = 90
 }

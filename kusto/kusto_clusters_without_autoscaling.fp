@@ -1,44 +1,45 @@
 locals {
-  service_fabric_cluster_exceeding_max_age_query = <<-EOQ
+  kusto_clusters_without_autoscaling_query = <<-EOQ
     select
-      concat(c.id, ' [', c.resource_group, '/', c.subscription_id, ']') as title,
-      c.name,
-      c.resource_group,
-      c.subscription_id,
-      c._ctx ->> 'connection_name' as cred
+      concat(kc.id, ' [', kc.resource_group, '/', kc.subscription_id, ']') as title,
+      kc.id as id,
+      kc.name,
+      kc.resource_group,
+      kc.subscription_id,
+      kc._ctx ->> 'connection_name' as cred
     from
-      azure_service_fabric_cluster as c
-      join azure_resource as r on lower(c.id) = lower(r.id)
-      join azure_subscription as sub on sub.subscription_id = c.subscription_id
+      azure_kusto_cluster as kc,
+      azure_subscription as sub
     where
-      date_part('day', now()-created_time) > ${var.service_fabric_cluster_exceeding_max_age_days};
+			sub.subscription_id = kc.subscription_id
+      and optimized_autoscale is null;
   EOQ
 }
 
-trigger "query" "detect_and_correct_service_fabric_cluster_exceeding_max_age" {
-  title         = "Detect & correct Service Fabric clusters exceeding max age"
-  description   = "Detects Service Fabric clusters exceeding max age and runs your chosen action."
-  documentation = file("./servicefabric/docs/detect_and_correct_service_fabric_cluster_exceeding_max_age_trigger.md")
-  // tags          = merge(local.service_fabric_common_tags, { class = "unused" })
+trigger "query" "detect_and_correct_kusto_clusters_without_autoscaling" {
+  title         = "Detect & correct Kusto clusters without autoscaling"
+  description   = "Detects Kusto clusters without autoscaling enabled and runs your chosen action."
+  documentation = file("./kusto/docs/detect_and_correct_kusto_clusters_without_autoscaling_trigger.md")
+  tags          = merge(local.kusto_common_tags, { class = "unused" })
 
-  enabled  = var.service_fabric_cluster_exceeding_max_age_trigger_enabled
-  schedule = var.service_fabric_cluster_exceeding_max_age_trigger_schedule
+  enabled  = var.kusto_clusters_without_autoscaling_trigger_enabled
+  schedule = var.kusto_clusters_without_autoscaling_trigger_schedule
   database = var.database
-  sql      = local.service_fabric_cluster_exceeding_max_age_query
+  sql      = local.kusto_clusters_without_autoscaling_query
 
   capture "insert" {
-    pipeline = pipeline.correct_service_fabric_cluster_exceeding_max_age
+    pipeline = pipeline.correct_kusto_clusters_without_autoscaling
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_correct_service_fabric_cluster_exceeding_max_age" {
-  title         = "Detect & correct Service Fabric clusters exceeding max age"
-  description   = "Detects Service Fabric clusters exceeding max age and runs your chosen action."
-  documentation = file("./servicefabric/docs/detect_and_correct_service_fabric_cluster_exceeding_max_age.md")
-  // tags          = merge(local.service_fabric_common_tags, { class = "unused", type = "featured" })
+pipeline "detect_and_correct_kusto_clusters_without_autoscaling" {
+  title         = "Detect & correct Kusto clusters without autoscaling"
+  description   = "Detects Kusto clusters without autoscaling enabled and runs your chosen action."
+  documentation = file("./kusto/docs/detect_and_correct_kusto_clusters_without_autoscaling.md")
+  tags          = merge(local.kusto_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
     type        = string
@@ -67,22 +68,22 @@ pipeline "detect_and_correct_service_fabric_cluster_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.service_fabric_cluster_exceeding_max_age_default_action
+    default     = var.kusto_clusters_without_autoscaling_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.service_fabric_cluster_exceeding_max_age_enabled_actions
+    default     = var.kusto_clusters_without_autoscaling_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.service_fabric_cluster_exceeding_max_age_query
+    sql      = local.kusto_clusters_without_autoscaling_query
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.correct_service_fabric_cluster_exceeding_max_age
+    pipeline = pipeline.correct_kusto_clusters_without_autoscaling
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -94,14 +95,15 @@ pipeline "detect_and_correct_service_fabric_cluster_exceeding_max_age" {
   }
 }
 
-pipeline "correct_service_fabric_cluster_exceeding_max_age" {
-  title         = "Correct Service Fabric clusters exceeding max age"
-  description   = "Runs corrective action on a collection of Service Fabric clusters exceeding max age."
-  documentation = file("./servicefabric/docs/correct_service_fabric_cluster_exceeding_max_age.md")
-  // tags          = merge(local.service_fabric_common_tags, { class = "unused" })
+pipeline "correct_kusto_clusters_without_autoscaling" {
+  title         = "Correct Kusto clusters without autoscaling"
+  description   = "Runs corrective action on a collection of Kusto clusters without autoscaling enabled."
+  documentation = file("./kusto/docs/correct_kusto_clusters_without_autoscaling.md")
+  tags          = merge(local.kusto_common_tags, { class = "unused" })
 
   param "items" {
     type = list(object({
+      id              = string
       title           = string
       name            = string
       resource_group  = string
@@ -132,29 +134,29 @@ pipeline "correct_service_fabric_cluster_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.service_fabric_cluster_exceeding_max_age_default_action
+    default     = var.kusto_clusters_without_autoscaling_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.service_fabric_cluster_exceeding_max_age_enabled_actions
+    default     = var.kusto_clusters_without_autoscaling_enabled_actions
   }
 
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} Service Fabric clusters exceeding maximum age."
+    text     = "Detected ${length(param.items)} Kusto Clusters without autoscaling enabled."
   }
 
   step "transform" "items_by_id" {
-    value = { for row in param.items : row.name => row }
+    value = { for row in param.items : row.id => row }
   }
 
-  step "pipeline" "correct_item" {
+  step "pipeline" "update_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.correct_one_service_fabric_cluster_exceeding_max_age
+    pipeline        = pipeline.correct_one_kusto_cluster_without_autoscaling
     args = {
       title              = each.value.title
       name               = each.value.name
@@ -170,11 +172,11 @@ pipeline "correct_service_fabric_cluster_exceeding_max_age" {
   }
 }
 
-pipeline "correct_one_service_fabric_cluster_exceeding_max_age" {
-  title         = "Correct one Service Fabric cluster exceeding max age"
-  description   = "Runs corrective action on a Service Fabric cluster exceeding max age."
-  documentation = file("./servicefabric/docs/correct_one_service_fabric_cluster_exceeding_max_age.md")
-  // tags          = merge(local.service_fabric_common_tags, { class = "unused" })
+pipeline "correct_one_kusto_cluster_without_autoscaling" {
+  title         = "Correct one Kusto cluster without autoscaling"
+  description   = "Runs corrective action on a single Kusto cluster without autoscaling enabled."
+  documentation = file("./kusto/docs/correct_one_kusto_cluster_without_autoscaling.md")
+  tags          = merge(local.kusto_common_tags, { class = "unused" })
 
   param "title" {
     type        = string
@@ -183,7 +185,7 @@ pipeline "correct_one_service_fabric_cluster_exceeding_max_age" {
 
   param "name" {
     type        = string
-    description = "The name of the Service Fabric cluster."
+    description = "The name of the Kusto Cluster."
   }
 
   param "resource_group" {
@@ -199,6 +201,7 @@ pipeline "correct_one_service_fabric_cluster_exceeding_max_age" {
   param "cred" {
     type        = string
     description = local.description_credential
+    default     = "default"
   }
 
   param "notifier" {
@@ -222,13 +225,13 @@ pipeline "correct_one_service_fabric_cluster_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.service_fabric_cluster_exceeding_max_age_default_action
+    default     = var.kusto_clusters_without_autoscaling_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.service_fabric_cluster_exceeding_max_age_enabled_actions
+    default     = var.kusto_clusters_without_autoscaling_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -237,7 +240,7 @@ pipeline "correct_one_service_fabric_cluster_exceeding_max_age" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected Service Fabric cluster ${param.title} exceeding maximum age."
+      detect_msg         = "Detected Kusto cluster ${param.title} without autoscaling enabled."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -249,56 +252,50 @@ pipeline "correct_one_service_fabric_cluster_exceeding_max_age" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Service Fabric cluster ${param.title} exceeding maximum age."
+            text     = "Skipped Kusto cluster ${param.title} without autoscaling enabled."
           }
           success_msg = ""
           error_msg   = ""
         },
-        "delete_cluster" = {
-          label        = "Delete Cluster"
-          value        = "delete_cluster"
+        "stop_kusto_cluster" = {
+          label        = "Stop Kusto Cluster"
+          value        = "stop_kusto_cluster"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_service_fabric_cluster
+          pipeline_ref = local.azure_pipeline_stop_kusto_cluster
           pipeline_args = {
             cluster_name     = param.name
             resource_group   = param.resource_group
             subscription_id  = param.subscription_id
             cred             = param.cred
           }
-          success_msg = "Deleted Service Fabric cluster ${param.title}."
-          error_msg   = "Error deleting Service Fabric cluster ${param.title}."
+          success_msg = "Stopped Kusto cluster ${param.title}."
+          error_msg   = "Error stopping Kusto cluster ${param.title}."
         }
       }
     }
   }
 }
 
-variable "service_fabric_cluster_exceeding_max_age_trigger_enabled" {
+variable "kusto_clusters_without_autoscaling_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "service_fabric_cluster_exceeding_max_age_trigger_schedule" {
+variable "kusto_clusters_without_autoscaling_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
 }
 
-variable "service_fabric_cluster_exceeding_max_age_default_action" {
+variable "kusto_clusters_without_autoscaling_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
 }
 
-variable "service_fabric_cluster_exceeding_max_age_enabled_actions" {
+variable "kusto_clusters_without_autoscaling_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_cluster"]
-}
-
-variable "service_fabric_cluster_exceeding_max_age_days" {
-  type        = number
-  description = "The maximum number of days Service Fabric clusters can be retained."
-  default     = 90
+  default     = ["skip", "stop_kusto_cluster"]
 }

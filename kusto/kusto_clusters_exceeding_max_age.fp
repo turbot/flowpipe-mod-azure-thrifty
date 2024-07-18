@@ -1,45 +1,44 @@
 locals {
-  storage_accounts_without_lifecycle_policy_query = <<-EOQ
-    select
-      concat(ac.id, ' [', ac.resource_group, '/', ac.subscription_id, ']') as title,
-      ac.id as resource,
-      ac.name,
-      ac.subscription_id,
-      ac.resource_group,
-      ac.title,
-      ac._ctx ->> 'connection_name' as cred
-    from
-      azure_storage_account as ac
-      left join azure_subscription as sub on ac.subscription_id = sub.subscription_id
-    where
-      (ac.lifecycle_management_policy -> 'properties' -> 'policy' -> 'rules') is null;
+  kusto_clusters_exceeding_max_age_query = <<-EOQ
+   	select
+			concat(c.id, ' [', c.resource_group, '/', c.subscription_id, ']') as title,
+			c.name,
+			c.resource_group,
+			c.subscription_id,
+			c._ctx ->> 'connection_name' as cred
+		from
+			azure_kusto_cluster as c
+			join azure_resource as r on lower(c.id) = lower(r.id)
+			join azure_subscription as sub on sub.subscription_id = c.subscription_id
+		where
+			date_part('day', now()-created_time) > ${var.kusto_clusters_exceeding_max_age_days};
   EOQ
 }
 
-trigger "query" "detect_and_correct_storage_accounts_without_lifecycle_policy" {
-  title         = "Detect & correct Storage Accounts without lifecycle policy"
-  description   = "Detects Storage Accounts without lifecycle policy and runs your chosen action."
-  documentation = file("./storage/docs/detect_and_correct_storage_accounts_without_lifecycle_policy_trigger.md")
-  tags          = merge(local.storage_common_tags, { class = "unused" })
+trigger "query" "detect_and_correct_kusto_clusters_exceeding_max_age" {
+  title         = "Detect & correct Kusto clusters exceeding max age"
+  description   = "Detects Kusto clusters exceeding max age and runs your chosen action."
+  documentation = file("./kusto/docs/detect_and_correct_kusto_clusters_exceeding_max_age_trigger.md")
+  tags          = merge(local.kusto_common_tags, { class = "unused" })
 
-  enabled  = var.storage_accounts_without_lifecycle_policy_trigger_enabled
-  schedule = var.storage_accounts_without_lifecycle_policy_trigger_schedule
+  enabled  = var.kusto_clusters_exceeding_max_age_trigger_enabled
+  schedule = var.kusto_clusters_exceeding_max_age_trigger_schedule
   database = var.database
-  sql      = local.storage_accounts_without_lifecycle_policy_query
+  sql      = local.kusto_clusters_exceeding_max_age_query
 
   capture "insert" {
-    pipeline = pipeline.correct_storage_accounts_without_lifecycle_policy
+    pipeline = pipeline.correct_kusto_clusters_exceeding_max_age
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_correct_storage_accounts_without_lifecycle_policy" {
-  title         = "Detect & correct Storage Accounts without lifecycle policy"
-  description   = "Detects Storage Accounts without lifecycle policy and runs your chosen action."
-  documentation = file("./storage/docs/detect_and_correct_storage_accounts_without_lifecycle_policy.md")
-  tags          = merge(local.storage_common_tags, { class = "unused", type = "featured" })
+pipeline "detect_and_correct_kusto_clusters_exceeding_max_age" {
+  title         = "Detect & correct Kusto clusters exceeding max age"
+  description   = "Detects Kusto clusters exceeding max age and runs your chosen action."
+  documentation = file("./kusto/docs/detect_and_correct_kusto_clusters_exceeding_max_age.md")
+  tags          = merge(local.kusto_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
     type        = string
@@ -68,22 +67,22 @@ pipeline "detect_and_correct_storage_accounts_without_lifecycle_policy" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.storage_accounts_without_lifecycle_policy_default_action
+    default     = var.kusto_clusters_exceeding_max_age_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.storage_accounts_without_lifecycle_policy_enabled_actions
+    default     = var.kusto_clusters_exceeding_max_age_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.storage_accounts_without_lifecycle_policy_query
+    sql      = local.kusto_clusters_exceeding_max_age_query
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.correct_storage_accounts_without_lifecycle_policy
+    pipeline = pipeline.correct_kusto_clusters_exceeding_max_age
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -95,11 +94,11 @@ pipeline "detect_and_correct_storage_accounts_without_lifecycle_policy" {
   }
 }
 
-pipeline "correct_storage_accounts_without_lifecycle_policy" {
-  title         = "Correct Storage Accounts without lifecycle policy"
-  description   = "Runs corrective action on a collection of Storage Accounts without lifecycle policy."
-  documentation = file("./storage/docs/correct_storage_accounts_without_lifecycle_policy.md")
-  tags          = merge(local.storage_common_tags, { class = "unused" })
+pipeline "correct_kusto_clusters_exceeding_max_age" {
+  title         = "Correct Kusto clusters exceeding max age"
+  description   = "Runs corrective action on a collection of Kusto clusters exceeding max age."
+  documentation = file("./kusto/docs/correct_kusto_clusters_exceeding_max_age.md")
+  tags          = merge(local.kusto_common_tags, { class = "unused" })
 
   param "items" {
     type = list(object({
@@ -133,19 +132,19 @@ pipeline "correct_storage_accounts_without_lifecycle_policy" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.storage_accounts_without_lifecycle_policy_default_action
+    default     = var.kusto_clusters_exceeding_max_age_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.storage_accounts_without_lifecycle_policy_enabled_actions
+    default     = var.kusto_clusters_exceeding_max_age_enabled_actions
   }
 
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} Storage Accounts without lifecycle policy."
+    text     = "Detected ${length(param.items)} Kusto clusters exceeding maximum age."
   }
 
   step "transform" "items_by_id" {
@@ -155,7 +154,7 @@ pipeline "correct_storage_accounts_without_lifecycle_policy" {
   step "pipeline" "correct_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.correct_one_storage_account_without_lifecycle_policy
+    pipeline        = pipeline.correct_one_kusto_cluster_exceeding_max_age
     args = {
       title              = each.value.title
       name               = each.value.name
@@ -171,11 +170,11 @@ pipeline "correct_storage_accounts_without_lifecycle_policy" {
   }
 }
 
-pipeline "correct_one_storage_account_without_lifecycle_policy" {
-  title         = "Correct one Storage Account without lifecycle policy"
-  description   = "Runs corrective action on an Storage Account without lifecycle policy."
-  documentation = file("./storage/docs/correct_one_storage_account_without_lifecycle_policy.md")
-  tags          = merge(local.storage_common_tags, { class = "unused" })
+pipeline "correct_one_kusto_cluster_exceeding_max_age" {
+  title         = "Correct one Kusto cluster exceeding max age"
+  description   = "Runs corrective action on a Kusto cluster exceeding max age."
+  documentation = file("./kusto/docs/correct_one_kusto_cluster_exceeding_max_age.md")
+  tags          = merge(local.kusto_common_tags, { class = "unused" })
 
   param "title" {
     type        = string
@@ -184,7 +183,7 @@ pipeline "correct_one_storage_account_without_lifecycle_policy" {
 
   param "name" {
     type        = string
-    description = "The name of the Storage Account."
+    description = "The name of the Kusto cluster."
   }
 
   param "resource_group" {
@@ -223,13 +222,13 @@ pipeline "correct_one_storage_account_without_lifecycle_policy" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.storage_accounts_without_lifecycle_policy_default_action
+    default     = var.kusto_clusters_exceeding_max_age_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.storage_accounts_without_lifecycle_policy_enabled_actions
+    default     = var.kusto_clusters_exceeding_max_age_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -238,7 +237,7 @@ pipeline "correct_one_storage_account_without_lifecycle_policy" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected Storage Account ${param.title} without lifecycle policy."
+      detect_msg         = "Detected Kusto cluster ${param.title} exceeding maximum age."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -250,50 +249,56 @@ pipeline "correct_one_storage_account_without_lifecycle_policy" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Storage Account ${param.title} without lifecycle policy."
+            text     = "Skipped Kusto cluster ${param.title} exceeding maximum age."
           }
           success_msg = ""
           error_msg   = ""
         },
-        "delete_storage_account" = {
-          label        = "Delete Storage Account"
-          value        = "delete_storage_account"
+        "delete_cluster" = {
+          label        = "Delete Cluster"
+          value        = "delete_cluster"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_storage_account
+          pipeline_ref = local.azure_pipeline_delete_kusto_cluster
           pipeline_args = {
-            account_name      = param.name
+            cluster_name     = param.name
             resource_group   = param.resource_group
             subscription_id  = param.subscription_id
             cred             = param.cred
           }
-          success_msg = "Deleted Storage Account ${param.title}."
-          error_msg   = "Error deleting Storage Account ${param.title}."
+          success_msg = "Deleted Kusto cluster ${param.title}."
+          error_msg   = "Error deleting Kusto cluster ${param.title}."
         }
       }
     }
   }
 }
 
-variable "storage_accounts_without_lifecycle_policy_trigger_enabled" {
+variable "kusto_clusters_exceeding_max_age_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "storage_accounts_without_lifecycle_policy_trigger_schedule" {
+variable "kusto_clusters_exceeding_max_age_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
 }
 
-variable "storage_accounts_without_lifecycle_policy_default_action" {
+variable "kusto_clusters_exceeding_max_age_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
 }
 
-variable "storage_accounts_without_lifecycle_policy_enabled_actions" {
+variable "kusto_clusters_exceeding_max_age_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_storage_account"]
+  default     = ["skip", "delete_cluster"]
+}
+
+variable "kusto_clusters_exceeding_max_age_days" {
+  type        = number
+  description = "The maximum number of days Kusto clusters can be retained."
+  default     = 90
 }

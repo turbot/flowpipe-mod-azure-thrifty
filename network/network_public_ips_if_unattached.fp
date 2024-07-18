@@ -1,44 +1,44 @@
 locals {
-  kusto_cluster_exceeding_max_age_query = <<-EOQ
-   	select
-			concat(c.id, ' [', c.resource_group, '/', c.subscription_id, ']') as title,
-			c.name,
-			c.resource_group,
-			c.subscription_id,
-			c._ctx ->> 'connection_name' as cred
-		from
-			azure_kusto_cluster as c
-			join azure_resource as r on lower(c.id) = lower(r.id)
-			join azure_subscription as sub on sub.subscription_id = c.subscription_id
-		where
-			date_part('day', now()-created_time) > ${var.kusto_cluster_exceeding_max_age_days};
+  network_public_ips_unattached_query = <<-EOQ
+  select
+    concat(ip.id, ' [', ip.resource_group, '/', ip.subscription_id, ']') as resource,
+    ip.name,
+    ip.subscription_id,
+    ip.resource_group,
+    ip._ctx ->> 'connection_name' as cred
+  from
+    azure_public_ip as ip,
+    azure_subscription as sub
+  where
+    sub.subscription_id = ip.subscription_id
+    and ip.ip_configuration_id is null;
   EOQ
 }
 
-trigger "query" "detect_and_correct_kusto_cluster_exceeding_max_age" {
-  title         = "Detect & correct Kusto clusters exceeding max age"
-  description   = "Detects Kusto clusters exceeding max age and runs your chosen action."
-  documentation = file("./kusto/docs/detect_and_correct_kusto_cluster_exceeding_max_age_trigger.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused" })
+trigger "query" "detect_and_correct_network_public_ips_unattached" {
+  title         = "Detect & correct Network unattached public IPs"
+  description   = "Detects unattached Network public IPs and runs your chosen action."
+  documentation = file("./network/docs/detect_and_correct_network_public_ips_unattached_trigger.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
-  enabled  = var.kusto_cluster_exceeding_max_age_trigger_enabled
-  schedule = var.kusto_cluster_exceeding_max_age_trigger_schedule
+  enabled  = var.network_public_ips_unattached_trigger_enabled
+  schedule = var.network_public_ips_unattached_trigger_schedule
   database = var.database
-  sql      = local.kusto_cluster_exceeding_max_age_query
+  sql      = local.network_public_ips_unattached_query
 
   capture "insert" {
-    pipeline = pipeline.correct_kusto_cluster_exceeding_max_age
+    pipeline = pipeline.correct_network_public_ips_unattached
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_correct_kusto_cluster_exceeding_max_age" {
-  title         = "Detect & correct Kusto clusters exceeding max age"
-  description   = "Detects Kusto clusters exceeding max age and runs your chosen action."
-  documentation = file("./kusto/docs/detect_and_correct_kusto_cluster_exceeding_max_age.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused", type = "featured" })
+pipeline "detect_and_correct_network_public_ips_unattached" {
+  title         = "Detect & correct Network unattached public IPs"
+  description   = "Detects unattached Network public IPs and runs your chosen action."
+  documentation = file("./network/docs/detect_and_correct_network_public_ips_unattached.md")
+  tags          = merge(local.network_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
     type        = string
@@ -67,22 +67,22 @@ pipeline "detect_and_correct_kusto_cluster_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.kusto_cluster_exceeding_max_age_default_action
+    default     = var.network_public_ips_unattached_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.kusto_cluster_exceeding_max_age_enabled_actions
+    default     = var.network_public_ips_unattached_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.kusto_cluster_exceeding_max_age_query
+    sql      = local.network_public_ips_unattached_query
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.correct_kusto_cluster_exceeding_max_age
+    pipeline = pipeline.correct_network_public_ips_unattached
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -94,18 +94,18 @@ pipeline "detect_and_correct_kusto_cluster_exceeding_max_age" {
   }
 }
 
-pipeline "correct_kusto_cluster_exceeding_max_age" {
-  title         = "Correct Kusto clusters exceeding max age"
-  description   = "Runs corrective action on a collection of Kusto clusters exceeding max age."
-  documentation = file("./kusto/docs/correct_kusto_cluster_exceeding_max_age.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused" })
+pipeline "correct_network_public_ips_unattached" {
+  title         = "Correct Network unattached public IPs"
+  description   = "Runs corrective action on a collection of Network unattached public IPs."
+  documentation = file("./network/docs/correct_network_public_ips_unattached.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
   param "items" {
     type = list(object({
-      title           = string
+      resource        = string
       name            = string
-      resource_group  = string
       subscription_id = string
+      resource_group  = string
       cred            = string
     }))
     description = local.description_items
@@ -132,34 +132,34 @@ pipeline "correct_kusto_cluster_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.kusto_cluster_exceeding_max_age_default_action
+    default     = var.network_public_ips_unattached_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.kusto_cluster_exceeding_max_age_enabled_actions
+    default     = var.network_public_ips_unattached_enabled_actions
   }
 
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} Kusto clusters exceeding maximum age."
+    text     = "Detected ${length(param.items)} Network unattached public IPs."
   }
 
   step "transform" "items_by_id" {
-    value = { for row in param.items : row.name => row }
+    value = { for row in param.items : row.resource => row }
   }
 
   step "pipeline" "correct_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.correct_one_kusto_cluster_exceeding_max_age
+    pipeline        = pipeline.correct_one_network_public_ip_unattached
     args = {
-      title              = each.value.title
+      resource           = each.value.resource
       name               = each.value.name
-      resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
+      resource_group     = each.value.resource_group
       cred               = each.value.cred
       notifier           = param.notifier
       notification_level = param.notification_level
@@ -170,30 +170,30 @@ pipeline "correct_kusto_cluster_exceeding_max_age" {
   }
 }
 
-pipeline "correct_one_kusto_cluster_exceeding_max_age" {
-  title         = "Correct one Kusto cluster exceeding max age"
-  description   = "Runs corrective action on a Kusto cluster exceeding max age."
-  documentation = file("./kusto/docs/correct_one_kusto_cluster_exceeding_max_age.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused" })
+pipeline "correct_one_network_public_ip_unattached" {
+  title         = "Correct one Network unattached public IP"
+  description   = "Runs corrective action on an unattached Network public IP."
+  documentation = file("./network/docs/correct_one_network_public_ip_unattached.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
-  param "title" {
+  param "resource" {
     type        = string
-    description = local.description_title
+    description = "The ID of the Network public IP."
   }
 
   param "name" {
     type        = string
-    description = "The name of the Kusto cluster."
-  }
-
-  param "resource_group" {
-    type        = string
-    description = local.description_resource_group
+    description = "The name of the Network public IP."
   }
 
   param "subscription_id" {
     type        = string
     description = local.description_subscription_id
+  }
+
+  param "resource_group" {
+    type        = string
+    description = local.description_resource_group
   }
 
   param "cred" {
@@ -222,13 +222,13 @@ pipeline "correct_one_kusto_cluster_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.kusto_cluster_exceeding_max_age_default_action
+    default     = var.network_public_ips_unattached_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.kusto_cluster_exceeding_max_age_enabled_actions
+    default     = var.network_public_ips_unattached_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -237,7 +237,7 @@ pipeline "correct_one_kusto_cluster_exceeding_max_age" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected Kusto cluster ${param.title} exceeding maximum age."
+      detect_msg         = "Detected Network public IP ${param.resource} is unattached."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -249,56 +249,50 @@ pipeline "correct_one_kusto_cluster_exceeding_max_age" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Kusto cluster ${param.title} exceeding maximum age."
+            text     = "Skipped Network public IP ${param.resource} unattached"
           }
           success_msg = ""
           error_msg   = ""
         },
-        "delete_cluster" = {
-          label        = "Delete Cluster"
-          value        = "delete_cluster"
+        "delete_ip" = {
+          label        = "Delete IP"
+          value        = "delete_ip"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_kusto_cluster
+          pipeline_ref = local.azure_pipeline_delete_network_public_ip
           pipeline_args = {
-            cluster_name     = param.name
-            resource_group   = param.resource_group
-            subscription_id  = param.subscription_id
-            cred             = param.cred
+            resource_group  = param.resource_group
+            subscription_id = param.subscription_id
+            public_ip_name  = param.name
+            cred            = param.cred
           }
-          success_msg = "Deleted Kusto cluster ${param.title}."
-          error_msg   = "Error deleting Kusto cluster ${param.title}."
+          success_msg = "Deleted Network public IP ${param.resource}."
+          error_msg   = "Error deleting Network public IP ${param.resource}."
         }
       }
     }
   }
 }
 
-variable "kusto_cluster_exceeding_max_age_trigger_enabled" {
+variable "network_public_ips_unattached_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "kusto_cluster_exceeding_max_age_trigger_schedule" {
+variable "network_public_ips_unattached_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
 }
 
-variable "kusto_cluster_exceeding_max_age_default_action" {
+variable "network_public_ips_unattached_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
 }
 
-variable "kusto_cluster_exceeding_max_age_enabled_actions" {
+variable "network_public_ips_unattached_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_cluster"]
-}
-
-variable "kusto_cluster_exceeding_max_age_days" {
-  type        = number
-  description = "The maximum number of days Kusto clusters can be retained."
-  default     = 90
+  default     = ["skip", "delete_ip"]
 }

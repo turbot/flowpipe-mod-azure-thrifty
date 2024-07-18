@@ -1,4 +1,4 @@
-# Detect & correct Virtual network gateways exceeding max age
+# Detect & correct Virtual network gateways if unused
 
 ## Overview
 

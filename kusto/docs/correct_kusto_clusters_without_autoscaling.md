@@ -8,5 +8,5 @@ This pipeline allows you to specify a collection of Kusto clusters with autoscal
 
 Whilst it is possible to utilize this pipeline standalone, it is usually called from either:
 
-- [detect_and_correct_kusto_cluster_without_autoscaling pipeline](https://hub.flowpipe.io/mods/turbot/azure_thrifty/pipelines/azure_thrifty.pipeline.detect_and_correct_kusto_cluster_without_autoscaling)
-- [detect_and_correct_kusto_cluster_without_autoscaling trigger](https://hub.flowpipe.io/mods/turbot/azure_thrifty/triggers/azure_thrifty.trigger.query.detect_and_correct_kusto_cluster_without_autoscaling)
+- [detect_and_correct_kusto_clusters_without_autoscaling pipeline](https://hub.flowpipe.io/mods/turbot/azure_thrifty/pipelines/azure_thrifty.pipeline.detect_and_correct_kusto_clusters_without_autoscaling)
+- [detect_and_correct_kusto_clusters_without_autoscaling trigger](https://hub.flowpipe.io/mods/turbot/azure_thrifty/triggers/azure_thrifty.trigger.query.detect_and_correct_kusto_clusters_without_autoscaling)

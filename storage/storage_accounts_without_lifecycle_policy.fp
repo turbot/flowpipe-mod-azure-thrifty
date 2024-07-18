@@ -1,45 +1,45 @@
 locals {
-  network_application_gateway_without_autoscaling_query = <<-EOQ
+  storage_accounts_without_lifecycle_policy_query = <<-EOQ
     select
-      concat(ag.id, ' [', ag.resource_group, '/', ag.subscription_id, ']') as title,
-      ag.id as id,
-      ag.name,
-      ag.resource_group,
-      ag.subscription_id,
-      ag._ctx ->> 'connection_name' as cred
+      concat(ac.id, ' [', ac.resource_group, '/', ac.subscription_id, ']') as title,
+      ac.id as resource,
+      ac.name,
+      ac.subscription_id,
+      ac.resource_group,
+      ac.title,
+      ac._ctx ->> 'connection_name' as cred
     from
-      azure_application_gateway as ag,
-      azure_subscription as sub
+      azure_storage_account as ac
+      left join azure_subscription as sub on ac.subscription_id = sub.subscription_id
     where
-      ag.autoscale_configuration is null
-      and sub.subscription_id = ag.subscription_id;
+      (ac.lifecycle_management_policy -> 'properties' -> 'policy' -> 'rules') is null;
   EOQ
 }
 
-trigger "query" "detect_and_correct_network_application_gateway_without_autoscaling" {
-  title         = "Detect & correct Network Application Gateways without autoscaling"
-  description   = "Detects Network Application Gateways without autoscaling enabled and runs your chosen action."
-  documentation = file("./network/docs/detect_and_correct_network_application_gateway_without_autoscaling_trigger.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+trigger "query" "detect_and_correct_storage_accounts_without_lifecycle_policy" {
+  title         = "Detect & correct Storage accounts without lifecycle policy"
+  description   = "Detects Storage accounts without lifecycle policy and runs your chosen action."
+  documentation = file("./storage/docs/detect_and_correct_storage_accounts_without_lifecycle_policy_trigger.md")
+  tags          = merge(local.storage_common_tags, { class = "unused" })
 
-  enabled  = var.network_application_gateway_without_autoscaling_trigger_enabled
-  schedule = var.network_application_gateway_without_autoscaling_trigger_schedule
+  enabled  = var.storage_accounts_without_lifecycle_policy_trigger_enabled
+  schedule = var.storage_accounts_without_lifecycle_policy_trigger_schedule
   database = var.database
-  sql      = local.network_application_gateway_without_autoscaling_query
+  sql      = local.storage_accounts_without_lifecycle_policy_query
 
   capture "insert" {
-    pipeline = pipeline.correct_network_application_gateway_without_autoscaling
+    pipeline = pipeline.correct_storage_accounts_without_lifecycle_policy
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_correct_network_application_gateway_without_autoscaling" {
-  title         = "Detect & correct Network Application Gateways without autoscaling"
-  description   = "Detects Network Application Gateways without autoscaling enabled and runs your chosen action."
-  documentation = file("./network/docs/detect_and_correct_network_application_gateway_without_autoscaling.md")
-  tags          = merge(local.network_common_tags, { class = "unused", type = "featured" })
+pipeline "detect_and_correct_storage_accounts_without_lifecycle_policy" {
+  title         = "Detect & correct Storage accounts without lifecycle policy"
+  description   = "Detects Storage accounts without lifecycle policy and runs your chosen action."
+  documentation = file("./storage/docs/detect_and_correct_storage_accounts_without_lifecycle_policy.md")
+  tags          = merge(local.storage_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
     type        = string
@@ -68,22 +68,22 @@ pipeline "detect_and_correct_network_application_gateway_without_autoscaling" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.network_application_gateway_without_autoscaling_default_action
+    default     = var.storage_accounts_without_lifecycle_policy_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.network_application_gateway_without_autoscaling_enabled_actions
+    default     = var.storage_accounts_without_lifecycle_policy_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.network_application_gateway_without_autoscaling_query
+    sql      = local.storage_accounts_without_lifecycle_policy_query
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.correct_network_application_gateway_without_autoscaling
+    pipeline = pipeline.correct_storage_accounts_without_lifecycle_policy
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -95,15 +95,14 @@ pipeline "detect_and_correct_network_application_gateway_without_autoscaling" {
   }
 }
 
-pipeline "correct_network_application_gateway_without_autoscaling" {
-  title         = "Correct Network Application Gateways without autoscaling"
-  description   = "Runs corrective action on a collection of Network Application Gateways without autoscaling enabled."
-  documentation = file("./network/docs/correct_network_application_gateway_without_autoscaling.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+pipeline "correct_storage_accounts_without_lifecycle_policy" {
+  title         = "Correct Storage accounts without lifecycle policy"
+  description   = "Runs corrective action on a collection of Storage accounts without lifecycle policy."
+  documentation = file("./storage/docs/correct_storage_accounts_without_lifecycle_policy.md")
+  tags          = merge(local.storage_common_tags, { class = "unused" })
 
   param "items" {
     type = list(object({
-      id              = string
       title           = string
       name            = string
       resource_group  = string
@@ -134,29 +133,29 @@ pipeline "correct_network_application_gateway_without_autoscaling" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.network_application_gateway_without_autoscaling_default_action
+    default     = var.storage_accounts_without_lifecycle_policy_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.network_application_gateway_without_autoscaling_enabled_actions
+    default     = var.storage_accounts_without_lifecycle_policy_enabled_actions
   }
 
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} Network Application Gateways without autoscaling enabled."
+    text     = "Detected ${length(param.items)} Storage Accounts without lifecycle policy."
   }
 
   step "transform" "items_by_id" {
-    value = { for row in param.items : row.id => row }
+    value = { for row in param.items : row.name => row }
   }
 
-  step "pipeline" "update_item" {
+  step "pipeline" "correct_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.correct_one_network_application_gateway_without_autoscaling
+    pipeline        = pipeline.correct_one_storage_account_without_lifecycle_policy
     args = {
       title              = each.value.title
       name               = each.value.name
@@ -172,11 +171,11 @@ pipeline "correct_network_application_gateway_without_autoscaling" {
   }
 }
 
-pipeline "correct_one_network_application_gateway_without_autoscaling" {
-  title         = "Correct one Network Application Gateway without autoscaling"
-  description   = "Runs corrective action on a single Network Application Gateway without autoscaling enabled."
-  documentation = file("./network/docs/correct_one_network_application_gateway_without_autoscaling.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+pipeline "correct_one_storage_account_without_lifecycle_policy" {
+  title         = "Correct one Storage account without lifecycle policy"
+  description   = "Runs corrective action on Storage account without lifecycle policy."
+  documentation = file("./storage/docs/correct_one_storage_account_without_lifecycle_policy.md")
+  tags          = merge(local.storage_common_tags, { class = "unused" })
 
   param "title" {
     type        = string
@@ -185,7 +184,7 @@ pipeline "correct_one_network_application_gateway_without_autoscaling" {
 
   param "name" {
     type        = string
-    description = "The name of the Network Application Gateway."
+    description = "The name of the Storage account."
   }
 
   param "resource_group" {
@@ -201,7 +200,6 @@ pipeline "correct_one_network_application_gateway_without_autoscaling" {
   param "cred" {
     type        = string
     description = local.description_credential
-    default     = "default"
   }
 
   param "notifier" {
@@ -225,13 +223,13 @@ pipeline "correct_one_network_application_gateway_without_autoscaling" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.network_application_gateway_without_autoscaling_default_action
+    default     = var.storage_accounts_without_lifecycle_policy_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.network_application_gateway_without_autoscaling_enabled_actions
+    default     = var.storage_accounts_without_lifecycle_policy_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -240,7 +238,7 @@ pipeline "correct_one_network_application_gateway_without_autoscaling" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected Network Application Gateway ${param.title} without autoscaling enabled."
+      detect_msg         = "Detected Storage account ${param.title} without lifecycle policy."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -252,50 +250,50 @@ pipeline "correct_one_network_application_gateway_without_autoscaling" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Network Application Gateway ${param.title} without autoscaling enabled."
+            text     = "Skipped Storage account ${param.title} without lifecycle policy."
           }
           success_msg = ""
           error_msg   = ""
         },
-        "stop_application_gateway" = {
-          label        = "Stop Application Gateway"
-          value        = "stop_application_gateway"
+        "delete_storage_account" = {
+          label        = "Delete Storage Account"
+          value        = "delete_storage_account"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_stop_network_application_gateway
+          pipeline_ref = local.azure_pipeline_delete_storage_account
           pipeline_args = {
-            application_gateway_name = param.name
-            resource_group           = param.resource_group
-            subscription_id          = param.subscription_id
-            cred                     = param.cred
+            account_name      = param.name
+            resource_group   = param.resource_group
+            subscription_id  = param.subscription_id
+            cred             = param.cred
           }
-          success_msg = "Stopped Network Application Gateway ${param.title}."
-          error_msg   = "Error stopping Network Application Gateway ${param.title}."
+          success_msg = "Deleted Storage account ${param.title}."
+          error_msg   = "Error deleting Storage account ${param.title}."
         }
       }
     }
   }
 }
 
-variable "network_application_gateway_without_autoscaling_trigger_enabled" {
+variable "storage_accounts_without_lifecycle_policy_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "network_application_gateway_without_autoscaling_trigger_schedule" {
+variable "storage_accounts_without_lifecycle_policy_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
 }
 
-variable "network_application_gateway_without_autoscaling_default_action" {
+variable "storage_accounts_without_lifecycle_policy_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
 }
 
-variable "network_application_gateway_without_autoscaling_enabled_actions" {
+variable "storage_accounts_without_lifecycle_policy_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "stop_application_gateway"]
+  default     = ["skip", "delete_storage_account"]
 }

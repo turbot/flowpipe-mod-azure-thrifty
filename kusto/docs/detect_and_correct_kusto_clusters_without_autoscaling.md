@@ -1,6 +1,6 @@
-# Detect & correct Network Application Gateways without autoscaling
+# Detect & correct Kusto clusters without autoscaling
 
-Autoscaling for Azure Application Gateways can provide significant cost optimization benefits by dynamically adjusting the number of instances based on traffic load. This ensures that you are only paying for the resources you need at any given time, avoiding over-provisioning during low traffic periods.
+Enabling autoscaling for Azure Kusto clusters can significantly optimize costs, especially in environments with fluctuating workloads. Autoscaling adjusts the number of resources based on demand, ensuring you are not over-provisioning and paying for unused capacity.
 
 ## Getting Started
 
@@ -9,7 +9,7 @@ This control works out-of-the-box with sensible defaults, configurable via [vari
 You should be able to simply run the following command in your terminal:
 
 ```sh
-flowpipe pipeline run detect_and_correct_network_application_gateway_without_autoscaling
+flowpipe pipeline run detect_and_correct_kusto_clusters_without_autoscaling
 ```
 
 You should now receive notification messages for the detections in your configured [notifier](https://flowpipe.io/docs/reference/config-files/notifier).
@@ -46,13 +46,13 @@ You can also decide to bypass asking for decision and just automatically apply t
 You can automatically apply a specific action without the need for running a Flowpipe Server and asking for a decision by setting the `default_action` parameter:
 
 ```sh
-flowpipe pipeline run detect_and_correct_network_application_gateway_without_autoscaling --arg='default_action="stop_application_gateway"'
+flowpipe pipeline run detect_and_correct_kusto_clusters_without_autoscaling --arg='default_action="stop_kusto_cluster"'
 ```
 
 However; if you have configured a non-empty list for your `approvers` variable, you will need to override it as below:
 
 ```sh
-flowpipe pipeline run detect_and_correct_network_application_gateway_without_autoscaling --arg='approvers=[]' --arg='default_action="stop_application_gateway"'
+flowpipe pipeline run detect_and_correct_kusto_clusters_without_autoscaling --arg='approvers=[]' --arg='default_action="stop_kusto_cluster"'
 ```
 
-This will attempt to apply the action to every detected item, if you're happy with this approach you could have this occur mmore frequently by either scheduling the command by yourself or enabling the associated [Query Trigger](https://hub.flowpipe.io/mods/turbot/azure_thrifty/triggers/azure_thrifty.trigger.query.detect_and_correct_network_application_gateway_without_autoscaling).
+This will attempt to apply the action to every detected item, if you're happy with this approach you could have this occur mmore frequently by either scheduling the command by yourself or enabling the associated [Query Trigger](https://hub.flowpipe.io/mods/turbot/azure_thrifty/triggers/azure_thrifty.trigger.query.detect_and_correct_kusto_clusters_without_autoscaling).

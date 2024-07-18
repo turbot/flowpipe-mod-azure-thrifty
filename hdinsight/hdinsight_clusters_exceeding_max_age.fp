@@ -1,5 +1,5 @@
 locals {
-  hdinsight_cluster_exceeding_max_age_query = <<-EOQ
+  hdinsight_clusters_exceeding_max_age_query = <<-EOQ
   select
 			concat(c.id, ' [', c.resource_group, '/', c.subscription_id, ']') as title,
 			c.name,
@@ -11,33 +11,33 @@ locals {
 			join azure_resource as r on lower(c.id) = lower(r.id)
 			join azure_subscription as sub on sub.subscription_id = c.subscription_id
 		where
-			date_part('day', now()-created_time) > ${var.hdinsight_cluster_exceeding_max_age_days};
+			date_part('day', now()-created_time) > ${var.hdinsight_clusters_exceeding_max_age_days};
   EOQ
 }
 
-trigger "query" "detect_and_correct_hdinsight_cluster_exceeding_max_age" {
+trigger "query" "detect_and_correct_hdinsight_clusters_exceeding_max_age" {
   title         = "Detect & correct HDInsight clusters exceeding max age"
   description   = "Detects HDInsight clusters exceeding max age and runs your chosen action."
-  documentation = file("./hdinsight/docs/detect_and_correct_hdinsight_cluster_exceeding_max_age_trigger.md")
+  documentation = file("./hdinsight/docs/detect_and_correct_hdinsight_clusters_exceeding_max_age_trigger.md")
   tags          = merge(local.hdinsight_common_tags, { class = "unused" })
 
-  enabled  = var.hdinsight_cluster_exceeding_max_age_trigger_enabled
-  schedule = var.hdinsight_cluster_exceeding_max_age_trigger_schedule
+  enabled  = var.hdinsight_clusters_exceeding_max_age_trigger_enabled
+  schedule = var.hdinsight_clusters_exceeding_max_age_trigger_schedule
   database = var.database
-  sql      = local.hdinsight_cluster_exceeding_max_age_query
+  sql      = local.hdinsight_clusters_exceeding_max_age_query
 
   capture "insert" {
-    pipeline = pipeline.correct_hdinsight_cluster_exceeding_max_age
+    pipeline = pipeline.correct_hdinsight_clusters_exceeding_max_age
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_correct_hdinsight_cluster_exceeding_max_age" {
+pipeline "detect_and_correct_hdinsight_clusters_exceeding_max_age" {
   title         = "Detect & correct HDInsight clusters exceeding max age"
   description   = "Detects HDInsight clusters exceeding max age and runs your chosen action."
-  documentation = file("./hdinsight/docs/detect_and_correct_hdinsight_cluster_exceeding_max_age.md")
+  documentation = file("./hdinsight/docs/detect_and_correct_hdinsight_clusters_exceeding_max_age.md")
   tags          = merge(local.hdinsight_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
@@ -67,22 +67,22 @@ pipeline "detect_and_correct_hdinsight_cluster_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.hdinsight_cluster_exceeding_max_age_default_action
+    default     = var.hdinsight_clusters_exceeding_max_age_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.hdinsight_cluster_exceeding_max_age_enabled_actions
+    default     = var.hdinsight_clusters_exceeding_max_age_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.hdinsight_cluster_exceeding_max_age_query
+    sql      = local.hdinsight_clusters_exceeding_max_age_query
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.correct_hdinsight_cluster_exceeding_max_age
+    pipeline = pipeline.correct_hdinsight_clusters_exceeding_max_age
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -94,10 +94,10 @@ pipeline "detect_and_correct_hdinsight_cluster_exceeding_max_age" {
   }
 }
 
-pipeline "correct_hdinsight_cluster_exceeding_max_age" {
+pipeline "correct_hdinsight_clusters_exceeding_max_age" {
   title         = "Correct HDInsight clusters exceeding max age"
   description   = "Runs corrective action on a collection of HDInsight clusters exceeding max age."
-  documentation = file("./hdinsight/docs/correct_hdinsight_cluster_exceeding_max_age.md")
+  documentation = file("./hdinsight/docs/correct_hdinsight_clusters_exceeding_max_age.md")
   tags          = merge(local.hdinsight_common_tags, { class = "unused" })
 
   param "items" {
@@ -132,13 +132,13 @@ pipeline "correct_hdinsight_cluster_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.hdinsight_cluster_exceeding_max_age_default_action
+    default     = var.hdinsight_clusters_exceeding_max_age_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.hdinsight_cluster_exceeding_max_age_enabled_actions
+    default     = var.hdinsight_clusters_exceeding_max_age_enabled_actions
   }
 
   step "message" "notify_detection_count" {
@@ -222,13 +222,13 @@ pipeline "correct_one_hdinsight_cluster_exceeding_max_age" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.hdinsight_cluster_exceeding_max_age_default_action
+    default     = var.hdinsight_clusters_exceeding_max_age_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.hdinsight_cluster_exceeding_max_age_enabled_actions
+    default     = var.hdinsight_clusters_exceeding_max_age_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -273,31 +273,31 @@ pipeline "correct_one_hdinsight_cluster_exceeding_max_age" {
   }
 }
 
-variable "hdinsight_cluster_exceeding_max_age_trigger_enabled" {
+variable "hdinsight_clusters_exceeding_max_age_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "hdinsight_cluster_exceeding_max_age_trigger_schedule" {
+variable "hdinsight_clusters_exceeding_max_age_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
 }
 
-variable "hdinsight_cluster_exceeding_max_age_default_action" {
+variable "hdinsight_clusters_exceeding_max_age_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
 }
 
-variable "hdinsight_cluster_exceeding_max_age_enabled_actions" {
+variable "hdinsight_clusters_exceeding_max_age_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
   default     = ["skip", "delete_cluster"]
 }
 
-variable "hdinsight_cluster_exceeding_max_age_days" {
+variable "hdinsight_clusters_exceeding_max_age_days" {
   type        = number
   description = "The maximum number of days HDInsight clusters can be retained."
   default     = 90

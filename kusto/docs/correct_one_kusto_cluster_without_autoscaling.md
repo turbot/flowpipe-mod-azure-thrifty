@@ -1,4 +1,4 @@
-# Correct one Kusto Cluster without autoscaling
+# Correct one Kusto cluster without autoscaling
 
 ## Overview
 
@@ -6,4 +6,4 @@ Enabling autoscaling for Azure Kusto clusters can significantly optimize costs, 
 
 This pipeline allows you to specify a collection of Kusto clusters with autoscaling disabled and either sends notifications or attempts to perform predefined corrective actions upon the collection.
 
-Whilst it is possible to utilize this pipeline standalone, it is usually called from the [correct_kusto_cluster_without_autoscaling pipeline](https://hub.flowpipe.io/mods/turbot/azure_thrifty/pipelines/azure_thrifty.pipeline.correct_kusto_cluster_without_autoscaling).
+Whilst it is possible to utilize this pipeline standalone, it is usually called from the [correct_kusto_clusters_without_autoscaling pipeline](https://hub.flowpipe.io/mods/turbot/azure_thrifty/pipelines/azure_thrifty.pipeline.correct_kusto_clusters_without_autoscaling).

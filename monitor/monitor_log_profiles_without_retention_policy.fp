@@ -1,44 +1,43 @@
 locals {
-  network_public_ip_unattached_query = <<-EOQ
+  monitor_log_profiles_without_retention_policy_query = <<-EOQ
   select
-    concat(ip.id, ' [', ip.resource_group, '/', ip.subscription_id, ']') as resource,
-    ip.name,
-    ip.subscription_id,
-    ip.resource_group,
-    ip._ctx ->> 'connection_name' as cred
+    concat(lp.id, ' [', sub.subscription_id, ']') as title,
+    lp.name,
+    lp.subscription_id,
+    lp.title,
+    lp._ctx ->> 'connection_name' as cred
   from
-    azure_public_ip as ip,
-    azure_subscription as sub
+    azure_log_profile as lp
+    left join azure_subscription as sub on lp.subscription_id = sub.subscription_id
   where
-    sub.subscription_id = ip.subscription_id
-    and ip.ip_configuration_id is null;
+    lp.retention_policy ->> 'enabled' <> 'true';
   EOQ
 }
 
-trigger "query" "detect_and_correct_network_public_ip_unattached" {
-  title         = "Detect & correct Network unattached public IPs"
-  description   = "Detects unattached Network public IPs and runs your chosen action."
-  documentation = file("./network/docs/detect_and_correct_network_public_ip_unattached_trigger.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+trigger "query" "detect_and_correct_monitor_log_profiles_without_retention_policy" {
+  title         = "Detect & correct Monitor log profiles without retention policy"
+  description   = "Detects Monitor log profiles without retention policy and runs your chosen action."
+  documentation = file("./monitor/docs/detect_and_correct_monitor_log_profiles_without_retention_policy_trigger.md")
+  tags          = merge(local.monitor_common_tags, { class = "unused" })
 
-  enabled  = var.network_public_ip_unattached_trigger_enabled
-  schedule = var.network_public_ip_unattached_trigger_schedule
+  enabled  = var.monitor_log_profiles_without_retention_policy_trigger_enabled
+  schedule = var.monitor_log_profiles_without_retention_policy_trigger_schedule
   database = var.database
-  sql      = local.network_public_ip_unattached_query
+  sql      = local.monitor_log_profiles_without_retention_policy_query
 
   capture "insert" {
-    pipeline = pipeline.correct_network_public_ip_unattached
+    pipeline = pipeline.correct_monitor_log_profiles_without_retention_policy
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_correct_network_public_ip_unattached" {
-  title         = "Detect & correct Network unattached public IPs"
-  description   = "Detects unattached Network public IPs and runs your chosen action."
-  documentation = file("./network/docs/detect_and_correct_network_public_ip_unattached.md")
-  tags          = merge(local.network_common_tags, { class = "unused", type = "featured" })
+pipeline "detect_and_correct_monitor_log_profiles_without_retention_policy" {
+  title         = "Detect & correct Monitor log profiles without retention policy"
+  description   = "Detects Monitor log profiles without retention policy and runs your chosen action."
+  documentation = file("./monitor/docs/detect_and_correct_monitor_log_profiles_without_retention_policy.md")
+  tags          = merge(local.monitor_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
     type        = string
@@ -67,22 +66,22 @@ pipeline "detect_and_correct_network_public_ip_unattached" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.network_public_ip_unattached_default_action
+    default     = var.monitor_log_profiles_without_retention_policy_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.network_public_ip_unattached_enabled_actions
+    default     = var.monitor_log_profiles_without_retention_policy_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.network_public_ip_unattached_query
+    sql      = local.monitor_log_profiles_without_retention_policy_query
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.correct_network_public_ip_unattached
+    pipeline = pipeline.correct_monitor_log_profiles_without_retention_policy
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -94,18 +93,17 @@ pipeline "detect_and_correct_network_public_ip_unattached" {
   }
 }
 
-pipeline "correct_network_public_ip_unattached" {
-  title         = "Correct Network unattached public IPs"
-  description   = "Runs corrective action on a collection of Network unattached public IPs."
-  documentation = file("./network/docs/correct_network_public_ip_unattached.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+pipeline "correct_monitor_log_profiles_without_retention_policy" {
+  title         = "Correct Monitor log profiles without retention policy"
+  description   = "Runs corrective action on a collection of Monitor log profiles without retention policy."
+  documentation = file("./monitor/docs/correct_monitor_log_profiles_without_retention_policy.md")
+  tags          = merge(local.monitor_common_tags, { class = "unused" })
 
   param "items" {
     type = list(object({
-      resource        = string
+      title           = string
       name            = string
       subscription_id = string
-      resource_group  = string
       cred            = string
     }))
     description = local.description_items
@@ -132,34 +130,33 @@ pipeline "correct_network_public_ip_unattached" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.network_public_ip_unattached_default_action
+    default     = var.monitor_log_profiles_without_retention_policy_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.network_public_ip_unattached_enabled_actions
+    default     = var.monitor_log_profiles_without_retention_policy_enabled_actions
   }
 
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} Network unattached public IPs."
+    text     = "Detected ${length(param.items)} Monitor Log Profiles without retention policy."
   }
 
   step "transform" "items_by_id" {
-    value = { for row in param.items : row.resource => row }
+    value = { for row in param.items : row.name => row }
   }
 
   step "pipeline" "correct_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.correct_one_network_public_ip_unattached
+    pipeline        = pipeline.correct_one_monitor_log_profile_without_retention_policy
     args = {
-      resource           = each.value.resource
+      title              = each.value.title
       name               = each.value.name
       subscription_id    = each.value.subscription_id
-      resource_group     = each.value.resource_group
       cred               = each.value.cred
       notifier           = param.notifier
       notification_level = param.notification_level
@@ -170,30 +167,25 @@ pipeline "correct_network_public_ip_unattached" {
   }
 }
 
-pipeline "correct_one_network_public_ip_unattached" {
-  title         = "Correct one Network unattached public IP"
-  description   = "Runs corrective action on an unattached Network public IP."
-  documentation = file("./network/docs/correct_one_network_public_ip_unattached.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+pipeline "correct_one_monitor_log_profile_without_retention_policy" {
+  title         = "Correct one Monitor log profile without retention policy"
+  description   = "Runs corrective action on a Monitor log profile without retention policy."
+  documentation = file("./monitor/docs/correct_one_monitor_log_profile_without_retention_policy.md")
+  tags          = merge(local.monitor_common_tags, { class = "unused" })
 
-  param "resource" {
+  param "title" {
     type        = string
-    description = "The ID of the Network public IP."
+    description = local.description_title
   }
 
   param "name" {
     type        = string
-    description = "The name of the Network public IP."
+    description = "The name of the Monitor Log Profile."
   }
 
   param "subscription_id" {
     type        = string
     description = local.description_subscription_id
-  }
-
-  param "resource_group" {
-    type        = string
-    description = local.description_resource_group
   }
 
   param "cred" {
@@ -222,13 +214,13 @@ pipeline "correct_one_network_public_ip_unattached" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.network_public_ip_unattached_default_action
+    default     = var.monitor_log_profiles_without_retention_policy_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.network_public_ip_unattached_enabled_actions
+    default     = var.monitor_log_profiles_without_retention_policy_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -237,7 +229,7 @@ pipeline "correct_one_network_public_ip_unattached" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected Network public IP ${param.resource} is unattached."
+      detect_msg         = "Detected Monitor log profile ${param.title} without retention policy."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -249,50 +241,52 @@ pipeline "correct_one_network_public_ip_unattached" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Network public IP ${param.resource} unattached"
+            text     = "Skipped Monitor log profile ${param.title} without retention policy."
           }
           success_msg = ""
           error_msg   = ""
         },
-        "delete_ip" = {
-          label        = "Delete IP"
-          value        = "delete_ip"
+        "enable_log_profile_retention" = {
+          label        = "Enable Log Profile Retention"
+          value        = "enable_log_profile_retention"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_network_public_ip
+          pipeline_ref = local.azure_pipeline_update_monitor_log_profile_retention_policy
           pipeline_args = {
-            resource_group  = param.resource_group
-            subscription_id = param.subscription_id
-            public_ip_name  = param.name
-            cred            = param.cred
+            log_profile_name  = param.name
+            subscription_id   = param.subscription_id
+            retention_enabled = true
+            location          = "global"
+            retention_days    = 365
+            cred              = param.cred
           }
-          success_msg = "Deleted Network public IP ${param.resource}."
-          error_msg   = "Error deleting Network public IP ${param.resource}."
+          success_msg = "Updated Monitor log profile ${param.title}."
+          error_msg   = "Error updating Monitor log profile ${param.title}."
         }
       }
     }
   }
 }
 
-variable "network_public_ip_unattached_trigger_enabled" {
+variable "monitor_log_profiles_without_retention_policy_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "network_public_ip_unattached_trigger_schedule" {
+variable "monitor_log_profiles_without_retention_policy_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
 }
 
-variable "network_public_ip_unattached_default_action" {
+variable "monitor_log_profiles_without_retention_policy_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
 }
 
-variable "network_public_ip_unattached_enabled_actions" {
+variable "monitor_log_profiles_without_retention_policy_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_ip"]
+  default     = ["skip", "enable_log_profile_retention"]
 }

@@ -27,8 +27,8 @@ locals {
 }
 
 trigger "query" "detect_and_correct_network_load_balancers_if_unused" {
-  title         = "Detect & correct Network Load Balancers if unused"
-  description   = "Detects unused Network Load Balancers and runs your chosen action."
+  title         = "Detect & correct Network load balancers if unused"
+  description   = "Detects unused Network load balancers and runs your chosen action."
   documentation = file("./network/docs/detect_and_correct_network_load_balancers_if_unused_trigger.md")
   tags          = merge(local.network_common_tags, { class = "unused" })
 
@@ -46,8 +46,8 @@ trigger "query" "detect_and_correct_network_load_balancers_if_unused" {
 }
 
 pipeline "detect_and_correct_network_load_balancers_if_unused" {
-  title         = "Detect & correct Network Load Balancers if unused"
-  description   = "Detects unused Network Load Balancers and runs your chosen action."
+  title         = "Detect & correct Network load balancers if unused"
+  description   = "Detects unused Network load balancers and runs your chosen action."
   documentation = file("./network/docs/detect_and_correct_network_load_balancers_if_unused.md")
   tags          = merge(local.network_common_tags, { class = "unused", type = "featured" })
 
@@ -106,8 +106,8 @@ pipeline "detect_and_correct_network_load_balancers_if_unused" {
 }
 
 pipeline "correct_network_load_balancers_if_unused" {
-  title         = "Correct Network Load Balancers if unused"
-  description   = "Runs corrective action on a collection of Network Load Balancers which are unused."
+  title         = "Correct Network load balancers if unused"
+  description   = "Runs corrective action on a collection of Network load balancers which are unused."
   documentation = file("./network/docs/correct_network_load_balancers_if_unused.md")
   tags          = merge(local.network_common_tags, { class = "unused" })
 
@@ -156,7 +156,7 @@ pipeline "correct_network_load_balancers_if_unused" {
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} unused Network Load Balancers."
+    text     = "Detected ${length(param.items)} unused Network load balancers."
   }
 
   step "transform" "items_by_id" {
@@ -183,8 +183,8 @@ pipeline "correct_network_load_balancers_if_unused" {
 }
 
 pipeline "correct_one_network_load_balancer_if_unused" {
-  title         = "Correct one Network Load Balancer if unused"
-  description   = "Runs corrective action on a single Network Load Balancer which is unused."
+  title         = "Correct one Network load balancer if unused"
+  description   = "Runs corrective action on a single Network load balancer which is unused."
   documentation = file("./network/docs/correct_one_network_load_balancer_if_unused.md")
   tags          = merge(local.network_common_tags, { class = "unused" })
 
@@ -195,7 +195,7 @@ pipeline "correct_one_network_load_balancer_if_unused" {
 
   param "name" {
     type        = string
-    description = "The name of the Network Load Balancer."
+    description = "The name of the Network load balancer."
   }
 
   param "resource_group" {
@@ -250,7 +250,7 @@ pipeline "correct_one_network_load_balancer_if_unused" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected unused Network Load Balancer ${param.title}."
+      detect_msg         = "Detected unused Network load balancer ${param.title}."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -262,7 +262,7 @@ pipeline "correct_one_network_load_balancer_if_unused" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Network Load Balancer ${param.title}."
+            text     = "Skipped Network load balancer ${param.title}."
           }
           success_msg = ""
           error_msg   = ""
@@ -278,8 +278,8 @@ pipeline "correct_one_network_load_balancer_if_unused" {
             subscription_id    = param.subscription_id
             cred               = param.cred
           }
-          success_msg = "Deleted Network Load Balancer ${param.title}."
-          error_msg   = "Error deleting Network Load Balancer ${param.title}."
+          success_msg = "Deleted Network load balancer ${param.title}."
+          error_msg   = "Error deleting Network load balancer ${param.title}."
         }
       }
     }

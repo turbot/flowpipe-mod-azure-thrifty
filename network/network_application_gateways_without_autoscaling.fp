@@ -1,45 +1,45 @@
 locals {
-  kusto_cluster_without_autoscaling_query = <<-EOQ
+  network_application_gateways_without_autoscaling_query = <<-EOQ
     select
-      concat(kc.id, ' [', kc.resource_group, '/', kc.subscription_id, ']') as title,
-      kc.id as id,
-      kc.name,
-      kc.resource_group,
-      kc.subscription_id,
-      kc._ctx ->> 'connection_name' as cred
+      concat(ag.id, ' [', ag.resource_group, '/', ag.subscription_id, ']') as title,
+      ag.id as id,
+      ag.name,
+      ag.resource_group,
+      ag.subscription_id,
+      ag._ctx ->> 'connection_name' as cred
     from
-      azure_kusto_cluster as kc,
+      azure_application_gateway as ag,
       azure_subscription as sub
     where
-			sub.subscription_id = kc.subscription_id
-      and optimized_autoscale is null;
+      ag.autoscale_configuration is null
+      and sub.subscription_id = ag.subscription_id;
   EOQ
 }
 
-trigger "query" "detect_and_correct_kusto_cluster_without_autoscaling" {
-  title         = "Detect & correct Kusto Clusters without autoscaling"
-  description   = "Detects Kusto Clusters without autoscaling enabled and runs your chosen action."
-  documentation = file("./kusto/docs/detect_and_correct_kusto_cluster_without_autoscaling_trigger.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused" })
+trigger "query" "detect_and_correct_network_application_gateways_without_autoscaling" {
+  title         = "Detect & correct Network application gateways without autoscaling"
+  description   = "Detects Network application gateways without autoscaling enabled and runs your chosen action."
+  documentation = file("./network/docs/detect_and_correct_network_application_gateways_without_autoscaling_trigger.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
-  enabled  = var.kusto_cluster_without_autoscaling_trigger_enabled
-  schedule = var.kusto_cluster_without_autoscaling_trigger_schedule
+  enabled  = var.network_application_gateways_without_autoscaling_trigger_enabled
+  schedule = var.network_application_gateways_without_autoscaling_trigger_schedule
   database = var.database
-  sql      = local.kusto_cluster_without_autoscaling_query
+  sql      = local.network_application_gateways_without_autoscaling_query
 
   capture "insert" {
-    pipeline = pipeline.correct_kusto_cluster_without_autoscaling
+    pipeline = pipeline.correct_network_application_gateways_without_autoscaling
     args = {
       items = self.inserted_rows
     }
   }
 }
 
-pipeline "detect_and_correct_kusto_cluster_without_autoscaling" {
-  title         = "Detect & correct Kusto Clusters without autoscaling"
-  description   = "Detects Kusto Clusters without autoscaling enabled and runs your chosen action."
-  documentation = file("./kusto/docs/detect_and_correct_kusto_cluster_without_autoscaling.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused", type = "featured" })
+pipeline "detect_and_correct_network_application_gateways_without_autoscaling" {
+  title         = "Detect & correct Network application gateways without autoscaling"
+  description   = "Detects Network application gateways without autoscaling enabled and runs your chosen action."
+  documentation = file("./network/docs/detect_and_correct_network_application_gateways_without_autoscaling.md")
+  tags          = merge(local.network_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
     type        = string
@@ -68,22 +68,22 @@ pipeline "detect_and_correct_kusto_cluster_without_autoscaling" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.kusto_cluster_without_autoscaling_default_action
+    default     = var.network_application_gateways_without_autoscaling_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.kusto_cluster_without_autoscaling_enabled_actions
+    default     = var.network_application_gateways_without_autoscaling_enabled_actions
   }
 
   step "query" "detect" {
     database = param.database
-    sql      = local.kusto_cluster_without_autoscaling_query
+    sql      = local.network_application_gateways_without_autoscaling_query
   }
 
   step "pipeline" "respond" {
-    pipeline = pipeline.correct_kusto_cluster_without_autoscaling
+    pipeline = pipeline.correct_network_application_gateways_without_autoscaling
     args = {
       items              = step.query.detect.rows
       notifier           = param.notifier
@@ -95,11 +95,11 @@ pipeline "detect_and_correct_kusto_cluster_without_autoscaling" {
   }
 }
 
-pipeline "correct_kusto_cluster_without_autoscaling" {
-  title         = "Correct Kusto Clusters without autoscaling"
-  description   = "Runs corrective action on a collection of Kusto Clusters without autoscaling enabled."
-  documentation = file("./kusto/docs/correct_kusto_cluster_without_autoscaling.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused" })
+pipeline "correct_network_application_gateways_without_autoscaling" {
+  title         = "Correct Network application gateways without autoscaling"
+  description   = "Runs corrective action on a collection of Network application gateways without autoscaling enabled."
+  documentation = file("./network/docs/correct_network_application_gateways_without_autoscaling.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
   param "items" {
     type = list(object({
@@ -134,19 +134,19 @@ pipeline "correct_kusto_cluster_without_autoscaling" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.kusto_cluster_without_autoscaling_default_action
+    default     = var.network_application_gateways_without_autoscaling_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.kusto_cluster_without_autoscaling_enabled_actions
+    default     = var.network_application_gateways_without_autoscaling_enabled_actions
   }
 
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} Kusto Clusters without autoscaling enabled."
+    text     = "Detected ${length(param.items)} Network application gateways without autoscaling enabled."
   }
 
   step "transform" "items_by_id" {
@@ -156,7 +156,7 @@ pipeline "correct_kusto_cluster_without_autoscaling" {
   step "pipeline" "update_item" {
     for_each        = step.transform.items_by_id.value
     max_concurrency = var.max_concurrency
-    pipeline        = pipeline.correct_one_kusto_cluster_without_autoscaling
+    pipeline        = pipeline.correct_one_network_application_gateway_without_autoscaling
     args = {
       title              = each.value.title
       name               = each.value.name
@@ -172,11 +172,11 @@ pipeline "correct_kusto_cluster_without_autoscaling" {
   }
 }
 
-pipeline "correct_one_kusto_cluster_without_autoscaling" {
-  title         = "Correct one Kusto Cluster without autoscaling"
-  description   = "Runs corrective action on a single Kusto Cluster without autoscaling enabled."
-  documentation = file("./kusto/docs/correct_one_kusto_cluster_without_autoscaling.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused" })
+pipeline "correct_one_network_application_gateway_without_autoscaling" {
+  title         = "Correct one Network application gateway without autoscaling"
+  description   = "Runs corrective action on a single Network application gateway without autoscaling enabled."
+  documentation = file("./network/docs/correct_one_network_application_gateway_without_autoscaling.md")
+  tags          = merge(local.network_common_tags, { class = "unused" })
 
   param "title" {
     type        = string
@@ -185,7 +185,7 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
 
   param "name" {
     type        = string
-    description = "The name of the Kusto Cluster."
+    description = "The name of the Network Application Gateway."
   }
 
   param "resource_group" {
@@ -225,13 +225,13 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.kusto_cluster_without_autoscaling_default_action
+    default     = var.network_application_gateways_without_autoscaling_default_action
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
-    default     = var.kusto_cluster_without_autoscaling_enabled_actions
+    default     = var.network_application_gateways_without_autoscaling_enabled_actions
   }
 
   step "pipeline" "respond" {
@@ -240,7 +240,7 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected Kusto Cluster ${param.title} without autoscaling enabled."
+      detect_msg         = "Detected Network Application Gateway ${param.title} without autoscaling enabled."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -252,50 +252,50 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Kusto Cluster ${param.title} without autoscaling enabled."
+            text     = "Skipped Network Application Gateway ${param.title} without autoscaling enabled."
           }
           success_msg = ""
           error_msg   = ""
         },
-        "stop_kusto_cluster" = {
-          label        = "Stop Kusto Cluster"
-          value        = "stop_kusto_cluster"
+        "stop_application_gateway" = {
+          label        = "Stop Application Gateway"
+          value        = "stop_application_gateway"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_stop_kusto_cluster
+          pipeline_ref = local.azure_pipeline_stop_network_application_gateway
           pipeline_args = {
-            cluster_name     = param.name
-            resource_group   = param.resource_group
-            subscription_id  = param.subscription_id
-            cred             = param.cred
+            application_gateway_name = param.name
+            resource_group           = param.resource_group
+            subscription_id          = param.subscription_id
+            cred                     = param.cred
           }
-          success_msg = "Stopped Kusto Cluster ${param.title}."
-          error_msg   = "Error stopping Kusto Cluster ${param.title}."
+          success_msg = "Stopped Network Application Gateway ${param.title}."
+          error_msg   = "Error stopping Network Application Gateway ${param.title}."
         }
       }
     }
   }
 }
 
-variable "kusto_cluster_without_autoscaling_trigger_enabled" {
+variable "network_application_gateways_without_autoscaling_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
 }
 
-variable "kusto_cluster_without_autoscaling_trigger_schedule" {
+variable "network_application_gateways_without_autoscaling_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
 }
 
-variable "kusto_cluster_without_autoscaling_default_action" {
+variable "network_application_gateways_without_autoscaling_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
 }
 
-variable "kusto_cluster_without_autoscaling_enabled_actions" {
+variable "network_application_gateways_without_autoscaling_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "stop_kusto_cluster"]
+  default     = ["skip", "stop_application_gateway"]
 }

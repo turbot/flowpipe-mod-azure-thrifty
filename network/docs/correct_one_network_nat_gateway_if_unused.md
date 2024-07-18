@@ -1,4 +1,4 @@
-# Corect one Network NAT gateways if unused
+# Corect one Network NAT gateway if unused
 
 ## Overview
 

@@ -17,8 +17,8 @@ locals {
 }
 
 trigger "query" "detect_and_correct_network_nat_gateways_if_unused" {
-  title         = "Detect & correct Virtual NAT Gateways if unused"
-  description   = "Detects unused Virtual NAT Gateways and runs your chosen action."
+  title         = "Detect & correct Network NAT gateways if unused"
+  description   = "Detects unused Network NAT gateways and runs your chosen action."
   documentation = file("./network/docs/detect_and_correct_network_nat_gateways_if_unused_trigger.md")
   tags          = merge(local.network_common_tags, { class = "unused" })
 
@@ -36,8 +36,8 @@ trigger "query" "detect_and_correct_network_nat_gateways_if_unused" {
 }
 
 pipeline "detect_and_correct_network_nat_gateways_if_unused" {
-  title         = "Detect & correct Network NAT Gateways if unused"
-  description   = "Detects unused NAT Gateways and runs your chosen action."
+  title         = "Detect & correct Network NAT gateways if unused"
+  description   = "Detects unused NAT gateways and runs your chosen action."
   documentation = file("./network/docs/detect_and_correct_network_nat_gateways_if_unused.md")
   tags          = merge(local.network_common_tags, { class = "unused", type = "featured" })
 
@@ -96,8 +96,8 @@ pipeline "detect_and_correct_network_nat_gateways_if_unused" {
 }
 
 pipeline "correct_network_nat_gateways_if_unused" {
-  title         = "Correct Network NAT Gateways if unused"
-  description   = "Runs corrective action on a collection of Network NAT Gateways which are unused."
+  title         = "Correct Network NAT gateways if unused"
+  description   = "Runs corrective action on a collection of Network NAT gateways which are unused."
   documentation = file("./network/docs/correct_network_nat_gateways_if_unused.md")
   tags          = merge(local.network_common_tags, { class = "unused" })
 
@@ -146,7 +146,7 @@ pipeline "correct_network_nat_gateways_if_unused" {
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} unused Network NAT Gateways."
+    text     = "Detected ${length(param.items)} unused Network NAT gateways."
   }
 
   step "transform" "items_by_id" {
@@ -173,8 +173,8 @@ pipeline "correct_network_nat_gateways_if_unused" {
 }
 
 pipeline "correct_one_network_nat_gateway_if_unused" {
-  title         = "Correct one Network NAT Gateway if unused"
-  description   = "Runs corrective action on a single network NAT Gateway which is unused."
+  title         = "Correct one Network NAT gateway if unused"
+  description   = "Runs corrective action on a single network NAT gateway which is unused."
   documentation = file("./network/docs/correct_one_network_nat_gateway_if_unused.md")
   tags          = merge(local.network_common_tags, { class = "unused" })
 
@@ -185,7 +185,7 @@ pipeline "correct_one_network_nat_gateway_if_unused" {
 
   param "name" {
     type        = string
-    description = "The name of the Network NAT Gateway."
+    description = "The name of the Network NAT gateway."
   }
 
   param "resource_group" {
@@ -240,7 +240,7 @@ pipeline "correct_one_network_nat_gateway_if_unused" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected unused Network NAT Gateway ${param.title}."
+      detect_msg         = "Detected unused Network NAT gateway ${param.title}."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -252,13 +252,13 @@ pipeline "correct_one_network_nat_gateway_if_unused" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Network NAT Gateway ${param.title}."
+            text     = "Skipped Network NAT gateway ${param.title}."
           }
           success_msg = ""
           error_msg   = ""
         },
         "delete_nat_gateway" = {
-          label        = "Delete Network NAT Gateway"
+          label        = "Delete Network NAT gateway"
           value        = "delete_nat_gateway"
           style        = local.style_alert
           pipeline_ref = local.azure_pipeline_delete_network_nat_gateway
@@ -268,8 +268,8 @@ pipeline "correct_one_network_nat_gateway_if_unused" {
             subscription_id = param.subscription_id
             cred            = param.cred
           }
-          success_msg = "Deleted Network NAT Gateway ${param.title}."
-          error_msg   = "Error deleting Network NAT Gateway ${param.title}."
+          success_msg = "Deleted Network NAT gateway ${param.title}."
+          error_msg   = "Error deleting Network NAT gateway ${param.title}."
         }
       }
     }

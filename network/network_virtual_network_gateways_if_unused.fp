@@ -18,8 +18,8 @@ locals {
 }
 
 trigger "query" "detect_and_correct_network_virtual_network_gateways_if_unused" {
-  title         = "Detect & correct network gateways if unused"
-  description   = "Detects unused network gateways and runs your chosen action."
+  title         = "Detect & correct Network virtual network gateways if unused"
+  description   = "Detects unused Network virtual network gateways and runs your chosen action."
   documentation = file("./network/docs/detect_and_correct_network_virtual_network_gateways_if_unused.md")
   tags          = merge(local.network_common_tags, { class = "unused" })
 
@@ -37,8 +37,8 @@ trigger "query" "detect_and_correct_network_virtual_network_gateways_if_unused" 
 }
 
 pipeline "detect_and_correct_network_virtual_network_gateways_if_unused" {
-  title         = "Detect & correct network gateways if unused"
-  description   = "Detects unused network gateways and runs your chosen action."
+  title         = "Detect & correct Network virtual network gateways if unused"
+  description   = "Detects unused Network virtual network gateways and runs your chosen action."
   documentation = file("./network/docs/detect_and_correct_network_virtual_network_gateways_if_unused.md")
   tags          = merge(local.network_common_tags, { class = "unused", type = "featured" })
 
@@ -97,8 +97,8 @@ pipeline "detect_and_correct_network_virtual_network_gateways_if_unused" {
 }
 
 pipeline "correct_network_virtual_network_gateways_if_unused" {
-  title         = "Correct Network Gateways if unused"
-  description   = "Runs corrective action on a collection of Network Gateways which are unused."
+  title         = "Correct Network virtual network gateways if unused"
+  description   = "Runs corrective action on a collection of Network virtual network gateways which are unused."
   documentation = file("./network/docs/correct_network_virtual_network_gateways_if_unused.md")
   tags          = merge(local.network_common_tags, { class = "unused" })
 
@@ -146,7 +146,7 @@ pipeline "correct_network_virtual_network_gateways_if_unused" {
   step "message" "notify_detection_count" {
     if       = var.notification_level == local.level_verbose
     notifier = notifier[param.notifier]
-    text     = "Detected ${length(param.items)} unused Network Gateways."
+    text     = "Detected ${length(param.items)} unused Network virtual network gateways."
   }
 
   step "transform" "items_by_id" {
@@ -173,8 +173,8 @@ pipeline "correct_network_virtual_network_gateways_if_unused" {
 }
 
 pipeline "correct_one_network_virtual_network_gateway_if_unused" {
-  title         = "Correct one Network Gateways if unused"
-  description   = "Runs corrective action on a single Network Gateway which is unused."
+  title         = "Correct one Network virtual network gateway if unused"
+  description   = "Runs corrective action on a single Network virtual network gateway which is unused."
   documentation = file("./network/docs/correct_one_network_virtual_network_gateway_if_unused.md")
   tags          = merge(local.network_common_tags, { class = "unused" })
 
@@ -185,7 +185,7 @@ pipeline "correct_one_network_virtual_network_gateway_if_unused" {
 
   param "name" {
     type        = string
-    description = "The name of the Network Gateway."
+    description = "The name of the Network virtual network gateway."
   }
 
   param "resource_group" {
@@ -239,7 +239,7 @@ pipeline "correct_one_network_virtual_network_gateway_if_unused" {
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
-      detect_msg         = "Detected unused Network Gateways ${param.title}."
+      detect_msg         = "Detected unused Network virtual network gateway ${param.title}."
       default_action     = param.default_action
       enabled_actions    = param.enabled_actions
       actions = {
@@ -251,14 +251,14 @@ pipeline "correct_one_network_virtual_network_gateway_if_unused" {
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
-            text     = "Skipped Network Gateway ${param.title}."
+            text     = "Skipped Network virtual network gateway ${param.title}."
           }
           success_msg = ""
           error_msg   = ""
         },
-        "delete_network_gateway" = {
-          label        = "Delete Network Gateway"
-          value        = "delete_network_gateway"
+        "delete_virtual_network_gateway" = {
+          label        = "Delete Virtual Network Gateway"
+          value        = "delete_virtual_network_gateway"
           style        = local.style_alert
           pipeline_ref = local.azure_pipeline_delete_network_virtual_network_gateway
           pipeline_args = {
@@ -296,5 +296,5 @@ variable "network_virtual_network_gateways_if_unused_default_action" {
 variable "network_virtual_network_gateways_if_unused_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_network_gateway"]
+  default     = ["skip", "delete_virtual_network_gateway"]
 }

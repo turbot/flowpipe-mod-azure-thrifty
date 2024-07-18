@@ -1,4 +1,4 @@
-# Detect & correct Network load balancer if unused
+# Detect & correct Network load balancers if unused
 
 ## Overview
 

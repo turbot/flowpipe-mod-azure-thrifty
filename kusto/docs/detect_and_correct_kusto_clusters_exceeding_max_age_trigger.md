@@ -9,9 +9,9 @@ This pipeline allows you to specify a collection of Kusto clusters and then eith
 ### Getting Started
 
 By default, this trigger is disabled, however it can be configred by [setting the below variables](https://flowpipe.io/docs/build/mod-variables#passing-input-variables)
-- `kusto_cluster_exceeding_max_age_trigger_enabled` should be set to `true` as the default is `false`.
-- `kusto_cluster_exceeding_max_age_trigger_schedule` should be set to your desired running [schedule](https://flowpipe.io/docs/flowpipe-hcl/trigger/schedule#more-examples)
-- `kusto_cluster_exceeding_max_age_default_action` should be set to your desired action (i.e. `"notify"` for notifications or `"delete_cluster"` to delete the Kusto cluster).
+- `kusto_clusters_exceeding_max_age_trigger_enabled` should be set to `true` as the default is `false`.
+- `kusto_clusters_exceeding_max_age_trigger_schedule` should be set to your desired running [schedule](https://flowpipe.io/docs/flowpipe-hcl/trigger/schedule#more-examples)
+- `kusto_clusters_exceeding_max_age_default_action` should be set to your desired action (i.e. `"notify"` for notifications or `"delete_cluster"` to delete the Kusto cluster).
 
 Then starting the server:
 ```sh
