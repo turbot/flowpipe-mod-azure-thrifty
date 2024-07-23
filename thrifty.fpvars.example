@@ -1,6 +1,138 @@
 # Core options
-database           = "postgres:#steampipe@localhost:9193/steampipe"
-notifier           = "default"
-notification_level = "info"
-approvers          = []
-max_concurrency    = 1
+# database           = "postgres:#steampipe@localhost:9193/steampipe"
+# notifier           = "default"
+# notification_level = "info"
+# approvers          = ["default"]
+# max_concurrency    = 1
+
+# app_service_plans_if_unused_default_action = "notify"
+# app_service_plans_if_unused_enabled_actions = ["skip", "delete_app_service_plan"]
+# app_service_plans_if_unused_trigger_enabled = false
+# app_service_plans_if_unused_trigger_schedule = "15m"
+
+# compute_disk_avg_max_usage = 90
+# compute_disk_exceeding_max_size = 90
+# compute_disk_max_iops_threshold = 20000
+
+# compute_disks_attached_to_stopped_virtual_machine_trigger_enabled = false
+# compute_disks_attached_to_stopped_virtual_machine_trigger_schedule = "15m"
+# compute_disks_attached_to_stopped_virtual_machines_default_action = "notify"
+# compute_disks_attached_to_stopped_virtual_machines_enabled_actions = ["skip", "detach_disk", "snapshot_and_delete_disk "delete_disk""]
+
+# compute_disks_exceeding_max_size_default_action = "notify"
+# compute_disks_exceeding_max_size_enabled_actions = ["skip", "delete_disk" "snapshot_and_delete_disk"]
+# compute_disks_exceeding_max_size_trigger_enabled = false
+# compute_disks_exceeding_max_size_trigger_schedule = "15m"
+
+# compute_disks_if_unattached_default_action = "notify"
+# compute_disks_if_unattached_enabled_actions = ["skip", "delete_disk", "snapshot_and_delete_disk"]
+# compute_disks_if_unattached_trigger_enabled = false
+# compute_disks_if_unattached_trigger_schedule = "15m"
+
+# compute_disks_with_high_iops_default_action = "notify"
+# compute_disks_with_high_iops_enabled_actions = ["skip", "snapshot_and_delete_disk", "delete_disk"]
+# compute_disks_with_high_iops_trigger_enabled = false
+# compute_disks_with_high_iops_trigger_schedule = "15m"
+
+# compute_disks_with_low_usage_default_action = "notify"
+# compute_disks_with_low_usage_enabled_actions = ["skip", "delete_disk"]
+# compute_disks_with_low_usage_trigger_enabled = false
+# compute_disks_with_low_usage_trigger_schedule = "15m"
+
+# compute_running_vm_age_max_days = 90
+# compute_snapshots_exceeding_max_age_days = 90
+# compute_snapshots_exceeding_max_age_default_action = "notify"
+# compute_snapshots_exceeding_max_age_enabled_actions = ["skip", "delete_snapshot"]
+# compute_snapshots_exceeding_max_age_trigger_enabled = false
+# compute_snapshots_exceeding_max_age_trigger_schedule = "15m"
+
+# compute_snapshots_if_storage_premium_default_action = "notify"
+# compute_snapshots_if_storage_premium_enabled_actions = ["skip", "update_snapshot_sku"]
+# compute_snapshots_if_storage_premium_trigger_enabled = false
+# compute_snapshots_if_storage_premium_trigger_schedule = "15m"
+
+# compute_virtual_machines_exceeding_max_age_default_action = "notify"
+# compute_virtual_machines_exceeding_max_age_enabled_actions = ["skip", "delete_virtual_machine"]
+# compute_virtual_machines_exceeding_max_age_trigger_enabled = false
+# compute_virtual_machines_exceeding_max_age_trigger_schedule = "15m"
+
+# compute_virtual_machines_with_low_utilization_avg_cpu_utilization = 20
+# compute_virtual_machines_with_low_utilization_default_action = "notify"
+# compute_virtual_machines_with_low_utilization_enabled_actions = ["skip", "stop_virtual_machine", "downgrade_instance_type"]
+# compute_virtual_machines_with_low_utilization_trigger_enabled = false
+# compute_virtual_machines_with_low_utilization_trigger_schedule = "15m"
+
+# hdinsight_clusters_exceeding_max_age_days = 90
+# hdinsight_clusters_exceeding_max_age_default_action = "notify"
+# hdinsight_clusters_exceeding_max_age_enabled_actions = ["skip", "delete_cluster"]
+# hdinsight_clusters_exceeding_max_age_trigger_enabled = false
+# hdinsight_clusters_exceeding_max_age_trigger_schedule = "15m"
+
+# kubernetes_clusters_exceeding_max_age_days = 90
+# kubernetes_clusters_exceeding_max_age_default_action = "notify"
+# kubernetes_clusters_exceeding_max_age_enabled_actions = ["skip", "delete_cluster"]
+# kubernetes_clusters_exceeding_max_age_trigger_enabled = false
+# kubernetes_clusters_exceeding_max_age_trigger_schedule = "15m"
+
+# kusto_clusters_exceeding_max_age_days = 90
+# kusto_clusters_exceeding_max_age_default_action = "notify"
+# kusto_clusters_exceeding_max_age_enabled_actions = ["skip", "delete_cluster"]
+# kusto_clusters_exceeding_max_age_trigger_enabled = false
+# kusto_clusters_exceeding_max_age_trigger_schedule = "15m"
+
+# kusto_clusters_without_autoscaling_default_action = "notify"
+# kusto_clusters_without_autoscaling_enabled_actions = ["skip", "stop_kusto_cluster"]
+# kusto_clusters_without_autoscaling_trigger_enabled = false
+# kusto_clusters_without_autoscaling_trigger_schedule = "15m"
+
+# monitor_log_profiles_without_retention_policy_default_action = "notify"
+# monitor_log_profiles_without_retention_policy_enabled_actions = ["skip", "enable_log_profile_retention"]
+# monitor_log_profiles_without_retention_policy_trigger_enabled = false
+# monitor_log_profiles_without_retention_policy_trigger_schedule = "15m"
+
+# network_application_gateways_without_autoscaling_default_action = "notify"
+# network_application_gateways_without_autoscaling_enabled_actions = ["skip", "stop_application_gateway"]
+# network_application_gateways_without_autoscaling_trigger_enabled = false
+# network_application_gateways_without_autoscaling_trigger_schedule = "15m"
+
+# network_load_balancers_if_unused_default_action = "notify"
+# network_load_balancers_if_unused_enabled_actions = ["skip", "delete_lb"]
+# network_load_balancers_if_unused_trigger_enabled = false
+# network_load_balancers_if_unused_trigger_schedule = "15m"
+
+# network_nat_gateways_if_unused_default_action = "notify"
+# network_nat_gateways_if_unused_enabled_actions = ["skip", "delete_nat_gateway"]
+# network_nat_gateways_if_unused_trigger_enabled = false
+# network_nat_gateways_if_unused_trigger_schedule = "15m"
+
+# network_public_ips_unattached_default_action = "notify"
+# network_public_ips_unattached_enabled_actions = ["skip", "delete_ip"]
+# network_public_ips_unattached_trigger_enabled = false
+# network_public_ips_unattached_trigger_schedule = "15m"
+
+# network_virtual_network_gateways_if_unused_default_action = "notify"
+# network_virtual_network_gateways_if_unused_enabled_actions = ["skip", "delete_virtual_network_gateway"]
+# network_virtual_network_gateways_if_unused_trigger_enabled = false
+# network_virtual_network_gateways_if_unused_trigger_schedule = "15m"
+
+# service_fabric_clusters_exceeding_max_age_days = 90
+# service_fabric_clusters_exceeding_max_age_default_action = "notify"
+# service_fabric_clusters_exceeding_max_age_enabled_actions = ["skip", "delete_cluster"]
+# service_fabric_clusters_exceeding_max_age_trigger_enabled = false
+# service_fabric_clusters_exceeding_max_age_trigger_schedule = "15m"
+
+# sql_databases_exceeding_max_age_days = 90
+# sql_databases_exceeding_max_age_default_action = "notify"
+# sql_databases_exceeding_max_age_enabled_actions = ["skip", "delete_sql_database"]
+# sql_databases_exceeding_max_age_trigger_enabled = false
+# sql_databases_exceeding_max_age_trigger_schedule = "15m"
+
+# storage_accounts_without_lifecycle_policy_default_action = "notify"
+# storage_accounts_without_lifecycle_policy_enabled_actions = ["skip", "delete_storage_account"]
+# storage_accounts_without_lifecycle_policy_trigger_enabled = false
+# storage_accounts_without_lifecycle_policy_trigger_schedule = "15m"
+
+# virtual_machine_scale_sets_if_unused_default_action = "notify"
+# virtual_machine_scale_sets_if_unused_enabled_actions = ["skip", "delete_virtual_machine_scale_set"]
+# virtual_machine_scale_sets_if_unused_trigger_enabled = false
+# virtual_machine_scale_sets_if_unused_trigger_schedule = "15m"
