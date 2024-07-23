@@ -19,7 +19,7 @@ trigger "query" "detect_and_correct_service_fabric_clusters_exceeding_max_age" {
   title         = "Detect & correct Service Fabric clusters exceeding max age"
   description   = "Detects Service Fabric clusters exceeding max age and runs your chosen action."
   documentation = file("./pipelines/servicefabric/docs/detect_and_correct_service_fabric_clusters_exceeding_max_age_trigger.md")
-  // tags          = merge(local.service_fabric_common_tags, { class = "unused" })
+  tags          = merge(local.service_fabric_common_tags, { class = "unused" })
 
   enabled  = var.service_fabric_clusters_exceeding_max_age_trigger_enabled
   schedule = var.service_fabric_clusters_exceeding_max_age_trigger_schedule
@@ -38,7 +38,7 @@ pipeline "detect_and_correct_service_fabric_clusters_exceeding_max_age" {
   title         = "Detect & correct Service Fabric clusters exceeding max age"
   description   = "Detects Service Fabric clusters exceeding max age and runs your chosen action."
   documentation = file("./pipelines/servicefabric/docs/detect_and_correct_service_fabric_clusters_exceeding_max_age.md")
-  // tags          = merge(local.service_fabric_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.service_fabric_common_tags, { class = "unused", type = "featured" })
 
   param "database" {
     type        = string
