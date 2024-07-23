@@ -441,25 +441,3 @@ variable "compute_virtual_machines_with_low_utilization_enabled_actions" {
   description = "The list of enabled actions to provide to approvers for selection."
   default     = ["skip", "stop_virtual_machine", "downgrade_instance_type"]
 }
-
-pipeline "mock_update_compute_virtual_machine_type" {
-  param "id" {
-    type = string
-  }
-
-  param "instance_type" {
-    type = string
-  }
-
-  param "region" {
-    type = string
-  }
-
-  param "cred" {
-    type = string
-  }
-
-  step "transform" "mock" {
-    value = "Mocked update Compute virtual machine type for ${param.instance_id} to ${param.instance_type}."
-  }
-}
