@@ -8,7 +8,7 @@ This query trigger detects network gateways exceeding max age and then either se
 
 ### Getting Started
 
-By default, this trigger is disabled, however it can be configred by [setting the below variables](https://flowpipe.io/docs/build/mod-variables#passing-input-variables)
+By default, this trigger is disabled, however it can be configured by [setting the below variables](https://flowpipe.io/docs/build/mod-variables#passing-input-variables)
 - `network_virtual_network_gateways_if_unused_trigger_enabled` should be set to `true` as the default is `false`.
 - `network_virtual_network_gateways_if_unused_trigger_schedule` should be set to your desired running [schedule](https://flowpipe.io/docs/flowpipe-hcl/trigger/schedule#more-examples)
 - `network_virtual_network_gateways_if_unused_default_action` should be set to your desired action (i.e. `"notify"` for notifications or `"delete_network_gateway"` to delete the network gateway).
