@@ -4,7 +4,7 @@ Enabling autoscaling for Azure Kusto clusters can significantly optimize costs, 
 
 ### Getting Started
 
-By default, this trigger is disabled, however it can be configred by [setting the below variables](https://flowpipe.io/docs/build/mod-variables#passing-input-variables)
+By default, this trigger is disabled, however it can be configured by [setting the below variables](https://flowpipe.io/docs/build/mod-variables#passing-input-variables)
 - `kusto_clusters_without_autoscaling_trigger_enabled` should be set to `true` as the default is `false`.
 - `kusto_clusters_without_autoscaling_trigger_schedule` should be set to your desired running [schedule](https://flowpipe.io/docs/flowpipe-hcl/trigger/schedule#more-examples)
 - `kusto_clusters_without_autoscaling_default_action` should be set to your desired action (i.e. `"notify"` for notifications or `"stop_kusto_cluster"` to stop the kusto cluster).
