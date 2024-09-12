@@ -39,7 +39,7 @@ pipeline "detect_and_correct_compute_disks_with_high_iops" {
   title         = "Detect & correct Compute disks with high IOPS"
   description   = "Detects Compute disks with high IOPS and runs your chosen action."
   documentation = file("./pipelines/compute/docs/detect_and_correct_compute_disks_with_high_iops.md")
-  tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.compute_common_tags, { class = "unused", type = "recommended" })
 
   param "database" {
     type        = string
@@ -299,28 +299,43 @@ variable "compute_disks_with_high_iops_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
   default     = ["skip", "snapshot_and_delete_disk", "delete_disk"]
+  tags = {
+    folder = "Advanced/Compute"
+  }
 }
 
 variable "compute_disks_with_high_iops_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
+  tags = {
+    folder = "Advanced/Compute"
+  }
 }
 
 variable "compute_disks_with_high_iops_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
+  tags = {
+    folder = "Advanced/Compute"
+  }
 }
 
 variable "compute_disks_with_high_iops_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
+  tags = {
+    folder = "Advanced/Compute"
+  }
 }
 
 variable "compute_disk_max_iops_threshold" {
   type        = number
   description = "The maximum IOPS threshold to consider a disk as having high IOPS."
   default     = 20000
+  tags = {
+    folder = "Advanced/Compute"
+  }
 }
