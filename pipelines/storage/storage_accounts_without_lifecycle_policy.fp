@@ -39,7 +39,7 @@ pipeline "detect_and_correct_storage_accounts_without_lifecycle_policy" {
   title         = "Detect & correct Storage accounts without lifecycle policy"
   description   = "Detects Storage accounts without lifecycle policy and runs your chosen action."
   documentation = file("./pipelines/storage/docs/detect_and_correct_storage_accounts_without_lifecycle_policy.md")
-  tags          = merge(local.storage_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.storage_common_tags, { class = "unused", type = "recommended" })
 
   param "database" {
     type        = string
@@ -278,22 +278,34 @@ variable "storage_accounts_without_lifecycle_policy_trigger_enabled" {
   type        = bool
   default     = false
   description = "If true, the trigger is enabled."
+  tags = {
+    folder = "Advanced/Storage"
+  }
 }
 
 variable "storage_accounts_without_lifecycle_policy_trigger_schedule" {
   type        = string
   default     = "15m"
   description = "The schedule on which to run the trigger if enabled."
+  tags = {
+    folder = "Advanced/Storage"
+  }
 }
 
 variable "storage_accounts_without_lifecycle_policy_default_action" {
   type        = string
   description = "The default action to use for the detected item, used if no input is provided."
   default     = "notify"
+  tags = {
+    folder = "Advanced/Storage"
+  }
 }
 
 variable "storage_accounts_without_lifecycle_policy_enabled_actions" {
   type        = list(string)
   description = "The list of enabled actions to provide to approvers for selection."
   default     = ["skip", "delete_storage_account"]
+  tags = {
+    folder = "Advanced/Storage"
+  }
 }
