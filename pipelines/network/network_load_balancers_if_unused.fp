@@ -1,6 +1,6 @@
 locals {
   network_load_balancers_if_unused = <<-EOQ
-		with lb_with_backend_pool as (
+    with lb_with_backend_pool as (
       select
         id
       from

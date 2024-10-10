@@ -1,6 +1,6 @@
 locals {
   virtual_machine_scale_sets_if_unused = <<-EOQ
-		with scale_set_vm_count as (
+    with scale_set_vm_count as (
       select
         count(*),
         scale_set_name,
@@ -15,18 +15,18 @@ locals {
         region,
         subscription_id
     ) select
-				concat(vmss.id, ' [', vmss.resource_group, '/', vmss.subscription_id, ']') as title,
-				vmss.id as id,
-				vmss.name,
-				vmss.resource_group,
-				vmss.subscription_id,
-				vmss.sp_connection_name as conn
-			from
-				azure_compute_virtual_machine_scale_set as vmss
-				left join scale_set_vm_count as vm on vm.scale_set_name = vmss.name and vm.resource_group = vmss.resource_group and vm.region = vmss.region
-				left join azure_subscription as sub on sub.subscription_id = vmss.subscription_id
-			where
-				vm.scale_set_name is null;
+        concat(vmss.id, ' [', vmss.resource_group, '/', vmss.subscription_id, ']') as title,
+        vmss.id as id,
+        vmss.name,
+        vmss.resource_group,
+        vmss.subscription_id,
+        vmss.sp_connection_name as conn
+      from
+        azure_compute_virtual_machine_scale_set as vmss
+        left join scale_set_vm_count as vm on vm.scale_set_name = vmss.name and vm.resource_group = vmss.resource_group and vm.region = vmss.region
+        left join azure_subscription as sub on sub.subscription_id = vmss.subscription_id
+      where
+        vm.scale_set_name is null;
   EOQ
 }
 

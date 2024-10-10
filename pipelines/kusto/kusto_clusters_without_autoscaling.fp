@@ -11,7 +11,7 @@ locals {
       azure_kusto_cluster as kc,
       azure_subscription as sub
     where
-			sub.subscription_id = kc.subscription_id
+      sub.subscription_id = kc.subscription_id
       and optimized_autoscale is null;
   EOQ
 }

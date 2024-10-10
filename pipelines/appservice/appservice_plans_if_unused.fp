@@ -12,7 +12,7 @@ locals {
       left join azure_subscription as sub on sub.subscription_id = asp.subscription_id
     where
       apps is null
-			and sku_tier <> 'Free';
+      and sku_tier <> 'Free';
   EOQ
 }
 

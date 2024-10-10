@@ -5,7 +5,7 @@ locals {
       db.name,
       db.resource_group,
       db.subscription_id,
-			db.server_name as server_name,
+      db.server_name as server_name,
       db.sp_connection_name as conn
     from
       azure_sql_database as db,
@@ -106,7 +106,7 @@ pipeline "correct_sql_databases_exceeding_max_age" {
       title           = string
       name            = string
       resource_group  = string
-			server_name     = string
+      server_name     = string
       subscription_id = string
       conn            = string
     }))
@@ -161,7 +161,7 @@ pipeline "correct_sql_databases_exceeding_max_age" {
       title              = each.value.title
       name               = each.value.name
       resource_group     = each.value.resource_group
-			server_name        = each.value.server_name
+      server_name        = each.value.server_name
       subscription_id    = each.value.subscription_id
       conn               = each.value.conn
       notifier           = param.notifier
@@ -194,10 +194,10 @@ pipeline "correct_one_sql_database_exceeding_max_age" {
     description = local.description_resource_group
   }
 
-	param "server_name" {
-		type        = string
-		description = "The name of the server."
-	}
+  param "server_name" {
+    type        = string
+    description = "The name of the server."
+  }
 
   param "subscription_id" {
     type        = string
@@ -270,7 +270,7 @@ pipeline "correct_one_sql_database_exceeding_max_age" {
           pipeline_args = {
             database_name   = param.name
             resource_group  = param.resource_group
-						server_name     = param.server_name
+            server_name     = param.server_name
             subscription_id = param.subscription_id
             conn            = param.conn
           }

@@ -2,7 +2,7 @@ locals {
   network_nat_gateways_if_unused = <<-EOQ
     select
       concat(g.id, ' [', g.resource_group, '/', g.subscription_id, ']') as title,
-			g.id as id,
+      g.id as id,
       g.name,
       g.resource_group,
       g.subscription_id,
@@ -103,7 +103,7 @@ pipeline "correct_network_nat_gateways_if_unused" {
 
   param "items" {
     type = list(object({
-			id              = string
+      id              = string
       title           = string
       name            = string
       resource_group  = string
@@ -160,9 +160,9 @@ pipeline "correct_network_nat_gateways_if_unused" {
     args = {
       title              = each.value.title
       conn               = each.value.conn
-			resource_group     = each.value.resource_group
-			subscription_id    = each.value.subscription_id
-			name               = each.value.name
+      resource_group     = each.value.resource_group
+      subscription_id    = each.value.subscription_id
+      name               = each.value.name
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers

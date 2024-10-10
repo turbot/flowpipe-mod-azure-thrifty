@@ -1,17 +1,17 @@
 locals {
   compute_snapshots_if_storage_premium_query = <<-EOQ
-		select
-			concat(s.id, ' [', s.resource_group, '/', s.subscription_id, ']') as title,
-			s.name,
-			s.resource_group,
-			s.subscription_id,
-			s.sp_connection_name as conn
-		from
-			azure_compute_snapshot as s,
-			azure_subscription as sub
-		where
-			sub.subscription_id = s.subscription_id
-			and s.sku_tier <> 'Standard';
+    select
+      concat(s.id, ' [', s.resource_group, '/', s.subscription_id, ']') as title,
+      s.name,
+      s.resource_group,
+      s.subscription_id,
+      s.sp_connection_name as conn
+    from
+      azure_compute_snapshot as s,
+      azure_subscription as sub
+    where
+      sub.subscription_id = s.subscription_id
+      and s.sku_tier <> 'Standard';
   EOQ
 }
 
@@ -263,7 +263,7 @@ pipeline "correct_one_compute_snapshot_if_storage_premium" {
             snapshot_name   = param.name
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
-						sku             = "Standard_LRS"
+            sku             = "Standard_LRS"
             conn            = param.conn
           }
           success_msg = "Updated Compute snapshot ${param.title}."

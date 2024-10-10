@@ -1,17 +1,17 @@
 locals {
   kusto_clusters_exceeding_max_age_query = <<-EOQ
     select
-			concat(c.id, ' [', c.resource_group, '/', c.subscription_id, ']') as title,
-			c.name,
-			c.resource_group,
-			c.subscription_id,
-			c.sp_connection_name as conn
-		from
-			azure_kusto_cluster as c
-			join azure_resource as r on lower(c.id) = lower(r.id)
-			join azure_subscription as sub on sub.subscription_id = c.subscription_id
-		where
-			date_part('day', now()-created_time) > ${var.kusto_clusters_exceeding_max_age_days};
+      concat(c.id, ' [', c.resource_group, '/', c.subscription_id, ']') as title,
+      c.name,
+      c.resource_group,
+      c.subscription_id,
+      c.sp_connection_name as conn
+    from
+      azure_kusto_cluster as c
+      join azure_resource as r on lower(c.id) = lower(r.id)
+      join azure_subscription as sub on sub.subscription_id = c.subscription_id
+    where
+      date_part('day', now()-created_time) > ${var.kusto_clusters_exceeding_max_age_days};
   EOQ
 }
 
