@@ -6,7 +6,7 @@ locals {
       asp.name,
       asp.resource_group,
       asp.subscription_id,
-      asp._ctx ->> 'connection_name' as cred
+      asp.sp_connection_name as conn
     from
       azure_app_service_plan as asp
       left join azure_subscription as sub on sub.subscription_id = asp.subscription_id
@@ -39,16 +39,16 @@ pipeline "detect_and_correct_app_service_plans_if_unused" {
   title         = "Detect & correct App Service Plans if unused"
   description   = "Detects unused App Service Plans and runs your chosen action."
   documentation = file("./pipelines/appservice/docs/detect_and_correct_app_service_plans_if_unused.md")
-  tags          = merge(local.appservice_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.appservice_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -60,7 +60,7 @@ pipeline "detect_and_correct_app_service_plans_if_unused" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -108,13 +108,13 @@ pipeline "correct_app_service_plans_if_unused" {
       name            = string
       resource_group  = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -126,7 +126,7 @@ pipeline "correct_app_service_plans_if_unused" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -144,8 +144,8 @@ pipeline "correct_app_service_plans_if_unused" {
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} unused App Service Plans."
   }
 
@@ -159,7 +159,7 @@ pipeline "correct_app_service_plans_if_unused" {
     pipeline        = pipeline.correct_one_app_service_plan_if_unused
     args = {
       title              = each.value.title
-      cred               = each.value.cred
+      conn               = each.value.conn
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
       name               = each.value.name
@@ -198,13 +198,13 @@ pipeline "correct_one_app_service_plan_if_unused" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -216,7 +216,7 @@ pipeline "correct_one_app_service_plan_if_unused" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -265,7 +265,7 @@ pipeline "correct_one_app_service_plan_if_unused" {
             service_plan_name = param.name
             resource_group    = param.resource_group
             subscription_id   = param.subscription_id
-            cred              = param.cred
+            conn              = param.conn
           }
           success_msg = "Deleted App Service Plan ${param.title}."
           error_msg   = "Error deleting App Service Plan ${param.title}."

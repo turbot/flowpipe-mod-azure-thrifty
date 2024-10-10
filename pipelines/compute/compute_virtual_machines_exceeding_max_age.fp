@@ -7,7 +7,7 @@ locals {
     vm.subscription_id,
     vm.resource_group,
     vm.title,
-    vm._ctx ->> 'connection_name' as cred
+    vm.sp_connection_name as conn
   from
     azure_compute_virtual_machine as vm,
     jsonb_array_elements(statuses) as s,
@@ -43,16 +43,16 @@ pipeline "detect_and_correct_compute_virtual_machines_exceeding_max_age" {
   title         = "Detect & correct Compute virtual machines exceeding max age"
   description   = "Detects Compute virtual machines exceeding max age and runs your chosen action."
   documentation = file("./pipelines/compute/docs/detect_and_correct_compute_virtual_machines_exceeding_max_age.md")
-  tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.compute_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -64,7 +64,7 @@ pipeline "detect_and_correct_compute_virtual_machines_exceeding_max_age" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -111,13 +111,13 @@ pipeline "correct_compute_virtual_machines_exceeding_max_age" {
       name            = string
       resource_group  = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -129,7 +129,7 @@ pipeline "correct_compute_virtual_machines_exceeding_max_age" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -147,8 +147,8 @@ pipeline "correct_compute_virtual_machines_exceeding_max_age" {
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} Compute virtual machines exceeding maximum age."
   }
 
@@ -165,7 +165,7 @@ pipeline "correct_compute_virtual_machines_exceeding_max_age" {
       name               = each.value.name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
-      cred               = each.value.cred
+      conn               = each.value.conn
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -201,13 +201,13 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -219,7 +219,7 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -268,7 +268,7 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
             vm_name         = param.name
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
-            cred            = param.cred
+            conn            = param.conn
           }
           success_msg = "Stopped Compute virtual machine ${param.title}."
           error_msg   = "Error stoping Compute virtual machine ${param.title}."
@@ -282,7 +282,7 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
             vm_name         = param.name
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
-            cred            = param.cred
+            conn            = param.conn
           }
           success_msg = "Deleted Compute virtual machine ${param.title}."
           error_msg   = "Error deleting Compute virtual machine ${param.title}."

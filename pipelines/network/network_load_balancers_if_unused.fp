@@ -15,7 +15,7 @@ locals {
       lb.name,
       lb.resource_group,
       lb.subscription_id,
-      lb._ctx ->> 'connection_name' as cred
+      lb.sp_connection_name as conn
     from
       azure_lb as lb
       left join lb_with_backend_pool as p on p.id = lb.id,
@@ -49,16 +49,16 @@ pipeline "detect_and_correct_network_load_balancers_if_unused" {
   title         = "Detect & correct Network load balancers if unused"
   description   = "Detects unused Network load balancers and runs your chosen action."
   documentation = file("./pipelines/network/docs/detect_and_correct_network_load_balancers_if_unused.md")
-  tags          = merge(local.network_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.network_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -70,7 +70,7 @@ pipeline "detect_and_correct_network_load_balancers_if_unused" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -118,13 +118,13 @@ pipeline "correct_network_load_balancers_if_unused" {
       name            = string
       resource_group  = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -136,7 +136,7 @@ pipeline "correct_network_load_balancers_if_unused" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -154,8 +154,8 @@ pipeline "correct_network_load_balancers_if_unused" {
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} unused Network load balancers."
   }
 
@@ -172,7 +172,7 @@ pipeline "correct_network_load_balancers_if_unused" {
       name               = each.value.name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
-      cred               = each.value.cred
+      conn               = each.value.conn
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -208,13 +208,13 @@ pipeline "correct_one_network_load_balancer_if_unused" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -226,7 +226,7 @@ pipeline "correct_one_network_load_balancer_if_unused" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -275,7 +275,7 @@ pipeline "correct_one_network_load_balancer_if_unused" {
             load_balancer_name = param.name
             resource_group     = param.resource_group
             subscription_id    = param.subscription_id
-            cred               = param.cred
+            conn               = param.conn
           }
           success_msg = "Deleted Network load balancer ${param.title}."
           error_msg   = "Error deleting Network load balancer ${param.title}."

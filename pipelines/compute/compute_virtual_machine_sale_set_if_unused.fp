@@ -20,7 +20,7 @@ locals {
 				vmss.name,
 				vmss.resource_group,
 				vmss.subscription_id,
-				vmss._ctx ->> 'connection_name' as cred
+				vmss.sp_connection_name as conn
 			from
 				azure_compute_virtual_machine_scale_set as vmss
 				left join scale_set_vm_count as vm on vm.scale_set_name = vmss.name and vm.resource_group = vmss.resource_group and vm.region = vmss.region
@@ -53,16 +53,16 @@ pipeline "detect_and_correct_virtual_machine_scale_sets_if_unused" {
   title         = "Detect & correct Compute virtual machine scale sets if unused"
   description   = "Detects unused Compute virtual machine scale sets and runs your chosen action."
   documentation = file("./pipelines/compute/docs/detect_and_correct_virtual_machine_scale_sets_if_unused.md")
-  tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.compute_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -74,7 +74,7 @@ pipeline "detect_and_correct_virtual_machine_scale_sets_if_unused" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -122,13 +122,13 @@ pipeline "correct_virtual_machine_scale_sets_if_unused" {
       name            = string
       resource_group  = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -140,7 +140,7 @@ pipeline "correct_virtual_machine_scale_sets_if_unused" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -158,8 +158,8 @@ pipeline "correct_virtual_machine_scale_sets_if_unused" {
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} unused Compute virtual machine scale sets."
   }
 
@@ -173,7 +173,7 @@ pipeline "correct_virtual_machine_scale_sets_if_unused" {
     pipeline        = pipeline.correct_one_virtual_machine_scale_set_if_unused
     args = {
       title              = each.value.title
-      cred               = each.value.cred
+      conn               = each.value.conn
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
       name               = each.value.name
@@ -212,13 +212,13 @@ pipeline "correct_one_virtual_machine_scale_set_if_unused" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -230,7 +230,7 @@ pipeline "correct_one_virtual_machine_scale_set_if_unused" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -279,7 +279,7 @@ pipeline "correct_one_virtual_machine_scale_set_if_unused" {
             vmss_name        = param.name
             resource_group   = param.resource_group
             subscription_id  = param.subscription_id
-            cred             = param.cred
+            conn             = param.conn
           }
           success_msg = "Deleted Compute virtual machine scale set ${param.title}."
           error_msg   = "Error deleting Compute virtual machine scale set ${param.title}."

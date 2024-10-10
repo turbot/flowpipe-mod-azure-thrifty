@@ -5,7 +5,7 @@ locals {
 			s.name,
 			s.resource_group,
 			s.subscription_id,
-			s._ctx ->> 'connection_name' as cred
+			s.sp_connection_name as conn
 		from
 			azure_compute_snapshot as s,
 			azure_subscription as sub
@@ -38,16 +38,16 @@ pipeline "detect_and_correct_compute_snapshots_if_storage_premium" {
   title         = "Detect & correct Compute snapshots with premium storage"
   description   = "Detects Compute snapshots with premium storage and runs your chosen action."
   documentation = file("./pipelines/compute/docs/detect_and_correct_compute_snapshots_if_storage_premium.md")
-  tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.compute_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -59,7 +59,7 @@ pipeline "detect_and_correct_compute_snapshots_if_storage_premium" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -106,13 +106,13 @@ pipeline "correct_compute_snapshots_if_storage_premium" {
       name            = string
       resource_group  = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -124,7 +124,7 @@ pipeline "correct_compute_snapshots_if_storage_premium" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -142,8 +142,8 @@ pipeline "correct_compute_snapshots_if_storage_premium" {
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} Compute snapshots with premium storage."
   }
 
@@ -160,7 +160,7 @@ pipeline "correct_compute_snapshots_if_storage_premium" {
       name               = each.value.name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
-      cred               = each.value.cred
+      conn               = each.value.conn
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -196,13 +196,13 @@ pipeline "correct_one_compute_snapshot_if_storage_premium" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -214,7 +214,7 @@ pipeline "correct_one_compute_snapshot_if_storage_premium" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -264,7 +264,7 @@ pipeline "correct_one_compute_snapshot_if_storage_premium" {
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
 						sku             = "Standard_LRS"
-            cred            = param.cred
+            conn            = param.conn
           }
           success_msg = "Updated Compute snapshot ${param.title}."
           error_msg   = "Error updating Compute snapshot ${param.title}."

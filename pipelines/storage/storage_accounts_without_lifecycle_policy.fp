@@ -7,7 +7,7 @@ locals {
       ac.subscription_id,
       ac.resource_group,
       ac.title,
-      ac._ctx ->> 'connection_name' as cred
+      ac.sp_connection_name as conn
     from
       azure_storage_account as ac
       left join azure_subscription as sub on ac.subscription_id = sub.subscription_id
@@ -39,16 +39,16 @@ pipeline "detect_and_correct_storage_accounts_without_lifecycle_policy" {
   title         = "Detect & correct Storage accounts without lifecycle policy"
   description   = "Detects Storage accounts without lifecycle policy and runs your chosen action."
   documentation = file("./pipelines/storage/docs/detect_and_correct_storage_accounts_without_lifecycle_policy.md")
-  tags          = merge(local.storage_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.storage_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -60,7 +60,7 @@ pipeline "detect_and_correct_storage_accounts_without_lifecycle_policy" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -107,13 +107,13 @@ pipeline "correct_storage_accounts_without_lifecycle_policy" {
       name            = string
       resource_group  = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -125,7 +125,7 @@ pipeline "correct_storage_accounts_without_lifecycle_policy" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -143,8 +143,8 @@ pipeline "correct_storage_accounts_without_lifecycle_policy" {
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} Storage Accounts without lifecycle policy."
   }
 
@@ -161,7 +161,7 @@ pipeline "correct_storage_accounts_without_lifecycle_policy" {
       name               = each.value.name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
-      cred               = each.value.cred
+      conn               = each.value.conn
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -197,13 +197,13 @@ pipeline "correct_one_storage_account_without_lifecycle_policy" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -215,7 +215,7 @@ pipeline "correct_one_storage_account_without_lifecycle_policy" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -264,7 +264,7 @@ pipeline "correct_one_storage_account_without_lifecycle_policy" {
             account_name      = param.name
             resource_group   = param.resource_group
             subscription_id  = param.subscription_id
-            cred             = param.cred
+            conn             = param.conn
           }
           success_msg = "Deleted Storage account ${param.title}."
           error_msg   = "Error deleting Storage account ${param.title}."

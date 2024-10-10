@@ -5,7 +5,7 @@ locals {
     ip.name,
     ip.subscription_id,
     ip.resource_group,
-    ip._ctx ->> 'connection_name' as cred
+    ip.sp_connection_name as conn
   from
     azure_public_ip as ip,
     azure_subscription as sub
@@ -38,16 +38,16 @@ pipeline "detect_and_correct_network_public_ips_unattached" {
   title         = "Detect & correct Network unattached public IPs"
   description   = "Detects unattached Network public IPs and runs your chosen action."
   documentation = file("./pipelines/network/docs/detect_and_correct_network_public_ips_unattached.md")
-  tags          = merge(local.network_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.network_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -59,7 +59,7 @@ pipeline "detect_and_correct_network_public_ips_unattached" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -106,13 +106,13 @@ pipeline "correct_network_public_ips_unattached" {
       name            = string
       subscription_id = string
       resource_group  = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -124,7 +124,7 @@ pipeline "correct_network_public_ips_unattached" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -142,8 +142,8 @@ pipeline "correct_network_public_ips_unattached" {
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} Network unattached public IPs."
   }
 
@@ -160,7 +160,7 @@ pipeline "correct_network_public_ips_unattached" {
       name               = each.value.name
       subscription_id    = each.value.subscription_id
       resource_group     = each.value.resource_group
-      cred               = each.value.cred
+      conn               = each.value.conn
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -196,13 +196,13 @@ pipeline "correct_one_network_public_ip_unattached" {
     description = local.description_resource_group
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -214,7 +214,7 @@ pipeline "correct_one_network_public_ip_unattached" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -263,7 +263,7 @@ pipeline "correct_one_network_public_ip_unattached" {
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
             public_ip_name  = param.name
-            cred            = param.cred
+            conn            = param.conn
           }
           success_msg = "Deleted Network public IP ${param.resource}."
           error_msg   = "Error deleting Network public IP ${param.resource}."

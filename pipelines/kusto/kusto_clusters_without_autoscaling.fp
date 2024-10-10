@@ -6,7 +6,7 @@ locals {
       kc.name,
       kc.resource_group,
       kc.subscription_id,
-      kc._ctx ->> 'connection_name' as cred
+      kc.sp_connection_name as conn
     from
       azure_kusto_cluster as kc,
       azure_subscription as sub
@@ -39,16 +39,16 @@ pipeline "detect_and_correct_kusto_clusters_without_autoscaling" {
   title         = "Detect & correct Kusto clusters without autoscaling"
   description   = "Detects Kusto clusters without autoscaling enabled and runs your chosen action."
   documentation = file("./pipelines/kusto/docs/detect_and_correct_kusto_clusters_without_autoscaling.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.kusto_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -60,7 +60,7 @@ pipeline "detect_and_correct_kusto_clusters_without_autoscaling" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -108,13 +108,13 @@ pipeline "correct_kusto_clusters_without_autoscaling" {
       name            = string
       resource_group  = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -126,7 +126,7 @@ pipeline "correct_kusto_clusters_without_autoscaling" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -144,8 +144,8 @@ pipeline "correct_kusto_clusters_without_autoscaling" {
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} Kusto Clusters without autoscaling enabled."
   }
 
@@ -162,7 +162,7 @@ pipeline "correct_kusto_clusters_without_autoscaling" {
       name               = each.value.name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
-      cred               = each.value.cred
+      conn               = each.value.conn
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -198,13 +198,13 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -216,7 +216,7 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -265,7 +265,7 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
             cluster_name     = param.name
             resource_group   = param.resource_group
             subscription_id  = param.subscription_id
-            cred             = param.cred
+            conn             = param.conn
           }
           success_msg = "Stopped Kusto cluster ${param.title}."
           error_msg   = "Error stopping Kusto cluster ${param.title}."

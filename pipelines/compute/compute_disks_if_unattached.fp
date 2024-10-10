@@ -6,7 +6,7 @@ locals {
     d.resource_group,
     d.subscription_id,
     d.name || to_char(current_date, 'YYYYMMDD') as snapshot_name,
-    d._ctx ->> 'connection_name' as cred
+    d.sp_connection_name as conn
   from
     azure_compute_disk as d,
     azure_subscription as sub
@@ -40,16 +40,16 @@ pipeline "detect_and_correct_compute_disks_if_unattached" {
   title         = "Detect & correct Compute disks unattached"
   description   = "Detects Compute disks unatatched and runs your chosen action."
   documentation = file("./pipelines/compute/docs/detect_and_correct_compute_disks_if_unattached.md")
-  tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.compute_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -61,7 +61,7 @@ pipeline "detect_and_correct_compute_disks_if_unattached" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -109,13 +109,13 @@ pipeline "correct_compute_disks_if_unattached" {
       resource_group  = string
       snapshot_name   = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -127,7 +127,7 @@ pipeline "correct_compute_disks_if_unattached" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -145,8 +145,8 @@ pipeline "correct_compute_disks_if_unattached" {
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} Compute disks unattached."
   }
 
@@ -164,7 +164,7 @@ pipeline "correct_compute_disks_if_unattached" {
       resource_group     = each.value.resource_group
       snapshot_name      = each.value.snapshot_name
       subscription_id    = each.value.subscription_id
-      cred               = each.value.cred
+      conn               = each.value.conn
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -205,13 +205,13 @@ pipeline "correct_one_compute_disk_if_unattached" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -223,7 +223,7 @@ pipeline "correct_one_compute_disk_if_unattached" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -272,7 +272,7 @@ pipeline "correct_one_compute_disk_if_unattached" {
             disk_name       = param.name
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
-            cred            = param.cred
+            conn            = param.conn
           }
           success_msg = "Deleted Compute disk ${param.title}."
           error_msg   = "Error deleting Compute disk ${param.title}."
@@ -286,7 +286,7 @@ pipeline "correct_one_compute_disk_if_unattached" {
             disk_name       = param.name
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
-            cred            = param.cred
+            conn            = param.conn
             snapshot_name   = param.snapshot_name
           }
           success_msg = "Deleted Compute disk ${param.title}."
@@ -325,10 +325,9 @@ pipeline "snapshot_and_delete_compute_disk" {
   title       = "Delete Compute Disk"
   description = "Delete a managed disk."
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
-    default     = "azure"
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "subscription_id" {
@@ -361,7 +360,7 @@ pipeline "snapshot_and_delete_compute_disk" {
       "--subscription", param.subscription_id
     ]
 
-    env = credential.azure[param.cred].env
+    env = param.conn.env
   }
 
   step "container" "delete_compute_disk" {
@@ -369,7 +368,7 @@ pipeline "snapshot_and_delete_compute_disk" {
     image      = "ghcr.io/turbot/flowpipe-image-azure-cli"
     cmd        = ["disk", "delete", "--yes", "-g", param.resource_group, "-n", param.disk_name, "--subscription", param.subscription_id]
 
-    env = credential.azure[param.cred].env
+    env = param.conn.env
   }
 
   output "disk" {

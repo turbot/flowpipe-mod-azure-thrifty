@@ -21,7 +21,7 @@ locals {
       i.size,
       i.resource_group,
       i.subscription_id,
-      i._ctx->'connection_name' as cred,
+      i.sp_connection_name as conn,
       i.size as instance_size,
       case when security_profile ->>  'securityType' = 'TrustedLaunch' then 'trusted_launch' else 'not_trusted_launch' end as trusted_launch_config,
       split_part(i.size, '_', 1) as tier
@@ -94,7 +94,7 @@ locals {
       order by fd.weight desc
       limit 1),'') as suggested_type,
     region,
-    cred
+    conn
   from
     compute_virtual_machine_current c;
   EOQ
@@ -123,16 +123,16 @@ pipeline "detect_and_correct_compute_virtual_machines_with_low_utilization" {
   title         = "Detect & correct Compute virtual machines with low utilization"
   description   = "Detects Compute virtual machines with low utilization and runs your chosen action."
   documentation = file("./pipelines/compute/docs/detect_and_correct_compute_virtual_machines_with_low_utilization.md")
-  tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.compute_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -144,7 +144,7 @@ pipeline "detect_and_correct_compute_virtual_machines_with_low_utilization" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -195,12 +195,12 @@ pipeline "correct_compute_virtual_machines_with_low_utilization" {
       region          = string
       resource_group  = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -212,7 +212,7 @@ pipeline "correct_compute_virtual_machines_with_low_utilization" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -230,8 +230,8 @@ pipeline "correct_compute_virtual_machines_with_low_utilization" {
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} Compute virtual machines without graviton processor."
   }
 
@@ -252,7 +252,7 @@ pipeline "correct_compute_virtual_machines_with_low_utilization" {
       subscription_id    = each.value.subscription_id
       vm_name            = each.value.vm_name
       region             = each.value.region
-      cred               = each.value.cred
+      conn               = each.value.conn
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -308,13 +308,13 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
     description = "The region of the Compute virtual machine."
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -326,7 +326,7 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -367,7 +367,7 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
           vm_name         = param.vm_name
           resource_group  = param.resource_group
           subscription_id = param.subscription_id
-          cred            = param.cred
+          conn            = param.conn
         }
         success_msg = "Stopped Compute virtual_machine ${param.title}."
         error_msg   = "Error stoping Compute virtual_machine ${param.title}."
@@ -389,7 +389,7 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
             new_size        = param.suggested_type
-            cred            = param.cred
+            conn            = param.conn
           }
           success_msg = "Downgraded Compute virtual machine ${param.title} from ${param.current_type} to ${param.suggested_type}."
           error_msg   = "Error downgrading Compute virtual machine ${param.title} type to ${param.suggested_type}."

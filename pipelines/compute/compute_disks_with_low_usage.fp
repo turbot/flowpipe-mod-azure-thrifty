@@ -41,7 +41,7 @@ locals {
       d.name || ' averaging ' || avg_max || ' read and write ops over the last ' || days / 2 || ' days.' as title,
       u.resource_group,
       u.subscription_id,
-      d._ctx ->> 'connection_name' as cred
+      d.sp_connection_name as conn
     from
       disk_usage as u left join azure_compute_disk as d on u.name = d.name
       left join azure_subscription as sub on sub.subscription_id = d.subscription_id
@@ -73,16 +73,16 @@ pipeline "detect_and_correct_compute_disks_with_low_usage" {
   title         = "Detect & correct Compute disk with low usage"
   description   = "Detects Compute disk with low usage."
   documentation = file("./pipelines/compute/docs/detect_and_correct_compute_disks_with_low_usage.md")
-  tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.compute_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -94,7 +94,7 @@ pipeline "detect_and_correct_compute_disks_with_low_usage" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -141,13 +141,13 @@ pipeline "correct_compute_disks_with_low_usage" {
       disk_name       = string
       resource_group  = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -159,7 +159,7 @@ pipeline "correct_compute_disks_with_low_usage" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -177,8 +177,8 @@ pipeline "correct_compute_disks_with_low_usage" {
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} Compute disks with low usage."
   }
 
@@ -195,7 +195,7 @@ pipeline "correct_compute_disks_with_low_usage" {
       disk_name          = each.value.disk_name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
-      cred               = each.value.cred
+      conn               = each.value.conn
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -231,13 +231,13 @@ pipeline "correct_one_compute_disk_with_low_usage" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -249,7 +249,7 @@ pipeline "correct_one_compute_disk_with_low_usage" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -298,7 +298,7 @@ pipeline "correct_one_compute_disk_with_low_usage" {
             disk_name       = param.disk_name
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
-            cred            = param.cred
+            conn            = param.conn
           }
           success_msg = "Deleted Compute disk ${param.title}."
           error_msg   = "Error deleting Compute disk ${param.title}."

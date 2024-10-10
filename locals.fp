@@ -21,7 +21,7 @@ locals {
 locals {
   description_database         = "Database connection string."
   description_approvers        = "List of notifiers to be used for obtaining action/approval decisions."
-  description_credential       = "Name of the credential to be used for any authenticated actions."
+  description_connection       = "Name of the Azure connection to be used for any authenticated actions."
   description_resource_group   = "Azure Resource Group of the resource(s)."
   description_subscription_id  = "Azure Subscription ID of the resource(s)."
   description_title            = "Title of the resource, to be used as a display name."

@@ -5,7 +5,7 @@ locals {
     lp.name,
     lp.subscription_id,
     lp.title,
-    lp._ctx ->> 'connection_name' as cred
+    lp.sp_connection_name as conn
   from
     azure_log_profile as lp
     left join azure_subscription as sub on lp.subscription_id = sub.subscription_id
@@ -37,16 +37,16 @@ pipeline "detect_and_correct_monitor_log_profiles_without_retention_policy" {
   title         = "Detect & correct Monitor log profiles without retention policy"
   description   = "Detects Monitor log profiles without retention policy and runs your chosen action."
   documentation = file("./pipelines/monitor/docs/detect_and_correct_monitor_log_profiles_without_retention_policy.md")
-  tags          = merge(local.monitor_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.monitor_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -58,7 +58,7 @@ pipeline "detect_and_correct_monitor_log_profiles_without_retention_policy" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -104,13 +104,13 @@ pipeline "correct_monitor_log_profiles_without_retention_policy" {
       title           = string
       name            = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -122,7 +122,7 @@ pipeline "correct_monitor_log_profiles_without_retention_policy" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -140,8 +140,8 @@ pipeline "correct_monitor_log_profiles_without_retention_policy" {
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} Monitor Log Profiles without retention policy."
   }
 
@@ -157,7 +157,7 @@ pipeline "correct_monitor_log_profiles_without_retention_policy" {
       title              = each.value.title
       name               = each.value.name
       subscription_id    = each.value.subscription_id
-      cred               = each.value.cred
+      conn               = each.value.conn
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -188,13 +188,13 @@ pipeline "correct_one_monitor_log_profile_without_retention_policy" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -206,7 +206,7 @@ pipeline "correct_one_monitor_log_profile_without_retention_policy" {
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -257,7 +257,7 @@ pipeline "correct_one_monitor_log_profile_without_retention_policy" {
             retention_enabled = true
             location          = "global"
             retention_days    = 365
-            cred              = param.cred
+            conn              = param.conn
           }
           success_msg = "Updated Monitor log profile ${param.title}."
           error_msg   = "Error updating Monitor log profile ${param.title}."
