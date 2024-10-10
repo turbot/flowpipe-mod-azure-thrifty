@@ -1,9 +1,11 @@
 # Core options
-# database           = "postgres:#steampipe@localhost:9193/steampipe"
-# notifier           = "default"
-# notification_level = "info"
-# approvers          = ["default"]
-# max_concurrency    = 1
+approvers          = [notifier.default]
+notifier           = notifier.default
+notification_level = "info"
+
+# Advanced options
+database        = connection.steampipe.default
+max_concurrency = 1
 
 # app_service_plans_if_unused_default_action = "notify"
 # app_service_plans_if_unused_enabled_actions = ["skip", "delete_app_service_plan"]
