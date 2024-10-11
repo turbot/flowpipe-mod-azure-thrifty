@@ -157,7 +157,7 @@ pipeline "correct_monitor_log_profiles_without_retention_policy" {
       title              = each.value.title
       name               = each.value.name
       subscription_id    = each.value.subscription_id
-      conn               = each.value.conn
+      conn               = connection.azure[each.value.conn]
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers

@@ -159,7 +159,7 @@ pipeline "correct_app_service_plans_if_unused" {
     pipeline        = pipeline.correct_one_app_service_plan_if_unused
     args = {
       title              = each.value.title
-      conn               = each.value.conn
+      conn               = connection.azure[each.value.conn]
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
       name               = each.value.name

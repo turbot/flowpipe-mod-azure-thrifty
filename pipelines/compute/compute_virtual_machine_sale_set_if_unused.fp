@@ -173,7 +173,7 @@ pipeline "correct_virtual_machine_scale_sets_if_unused" {
     pipeline        = pipeline.correct_one_virtual_machine_scale_set_if_unused
     args = {
       title              = each.value.title
-      conn               = each.value.conn
+      conn               = connection.azure[each.value.conn]
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
       name               = each.value.name

@@ -159,7 +159,7 @@ pipeline "correct_network_nat_gateways_if_unused" {
     pipeline        = pipeline.correct_one_network_nat_gateway_if_unused
     args = {
       title              = each.value.title
-      conn               = each.value.conn
+      conn               = connection.azure[each.value.conn]
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
       name               = each.value.name

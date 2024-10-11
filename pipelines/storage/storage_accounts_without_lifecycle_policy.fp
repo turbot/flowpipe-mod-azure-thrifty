@@ -161,7 +161,7 @@ pipeline "correct_storage_accounts_without_lifecycle_policy" {
       name               = each.value.name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
-      conn               = each.value.conn
+      conn               = connection.azure[each.value.conn]
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers

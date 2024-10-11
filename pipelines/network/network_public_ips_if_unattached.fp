@@ -160,7 +160,7 @@ pipeline "correct_network_public_ips_unattached" {
       name               = each.value.name
       subscription_id    = each.value.subscription_id
       resource_group     = each.value.resource_group
-      conn               = each.value.conn
+      conn               = connection.azure[each.value.conn]
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers

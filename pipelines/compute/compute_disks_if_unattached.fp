@@ -164,7 +164,7 @@ pipeline "correct_compute_disks_if_unattached" {
       resource_group     = each.value.resource_group
       snapshot_name      = each.value.snapshot_name
       subscription_id    = each.value.subscription_id
-      conn               = each.value.conn
+      conn               = connection.azure[each.value.conn]
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers

@@ -162,7 +162,7 @@ pipeline "correct_network_virtual_network_gateways_if_unused" {
       resource_group     = each.value.resource_group
       name               = each.value.name
       subscription_id    = each.value.subscription_id
-      conn               = each.value.conn
+      conn               = connection.azure[each.value.conn]
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers

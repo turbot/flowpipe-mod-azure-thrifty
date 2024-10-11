@@ -252,7 +252,7 @@ pipeline "correct_compute_virtual_machines_with_low_utilization" {
       subscription_id    = each.value.subscription_id
       vm_name            = each.value.vm_name
       region             = each.value.region
-      conn               = each.value.conn
+      conn               = connection.azure[each.value.conn]
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
