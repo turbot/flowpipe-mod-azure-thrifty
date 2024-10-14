@@ -4,7 +4,7 @@ mod "azure_thrifty" {
   color         = "#0089D6"
   documentation = file("./README.md")
   icon          = "/images/mods/turbot/azure-thrifty.svg"
-  categories    = ["azure", "cost", "thrifty", "public cloud"]
+  categories    = ["azure", "cost", "thrifty", "public cloud", "standard"]
   opengraph {
     title       = "Azure Thrifty Mod for Flowpipe"
     description = "Run pipelines to detect and correct Azure resources that are unused and underutilized."
