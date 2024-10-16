@@ -257,7 +257,7 @@ pipeline "correct_one_network_load_balancer_if_unused" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -270,7 +270,7 @@ pipeline "correct_one_network_load_balancer_if_unused" {
           label        = "Delete Network Load Balancer"
           value        = "delete_lb"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_network_load_balancer
+          pipeline_ref = azure.pipeline.delete_network_load_balancer
           pipeline_args = {
             load_balancer_name = param.name
             resource_group     = param.resource_group

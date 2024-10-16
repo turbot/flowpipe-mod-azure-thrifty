@@ -247,7 +247,7 @@ pipeline "correct_one_app_service_plan_if_unused" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -260,7 +260,7 @@ pipeline "correct_one_app_service_plan_if_unused" {
           label        = "Delete App Service Plan"
           value        = "delete_app_service_plan"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_app_service_plan
+          pipeline_ref = azure.pipeline.delete_app_service_plan
           pipeline_args = {
             service_plan_name = param.name
             resource_group    = param.resource_group

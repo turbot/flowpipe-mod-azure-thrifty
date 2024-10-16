@@ -247,7 +247,7 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -260,7 +260,7 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
           label        = "Stop Kusto Cluster"
           value        = "stop_kusto_cluster"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_stop_kusto_cluster
+          pipeline_ref = azure.pipeline.stop_kusto_cluster
           pipeline_args = {
             cluster_name     = param.name
             resource_group   = param.resource_group

@@ -250,7 +250,7 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -263,7 +263,7 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
           label        = "Stop Virtual Machine"
           value        = "stop_virtual_machine"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_stop_compute_virtual_machine
+          pipeline_ref = azure.pipeline.stop_compute_virtual_machine
           pipeline_args = {
             vm_name         = param.name
             resource_group  = param.resource_group
@@ -277,7 +277,7 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
           label        = "Delete Virtual Machine"
           value        = "delete_virtual_machine"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_compute_virtual_machine
+          pipeline_ref = azure.pipeline.delete_compute_virtual_machine
           pipeline_args = {
             vm_name         = param.name
             resource_group  = param.resource_group

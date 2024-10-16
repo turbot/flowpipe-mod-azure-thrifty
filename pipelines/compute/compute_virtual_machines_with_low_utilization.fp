@@ -349,7 +349,7 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
         label        = "Skip"
         value        = "skip"
         style        = local.style_info
-        pipeline_ref = local.pipeline_optional_message
+        pipeline_ref = detect_correct.pipeline.optional_message
         pipeline_args = {
           notifier = param.notifier
           send     = param.notification_level == local.level_verbose
@@ -362,7 +362,7 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
         label        = "Stop virtual_machine"
         value        = "stop_virtual_machine"
         style        = local.style_alert
-        pipeline_ref = local.azure_pipeline_stop_compute_virtual_machine
+        pipeline_ref = azure.pipeline.stop_compute_virtual_machine
         pipeline_args = {
           vm_name         = param.vm_name
           resource_group  = param.resource_group
@@ -383,7 +383,7 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
           label        = "Downgrade to ${param.suggested_type}"
           value        = "downgrade_instance_type"
           style        = local.style_ok
-          pipeline_ref = local.azure_pipeline_stop_compute_virtual_machine
+          pipeline_ref = azure.pipeline.stop_compute_virtual_machine
           pipeline_args = {
             vm_name         = param.vm_name
             resource_group  = param.resource_group

@@ -273,7 +273,7 @@ pipeline "correct_one_compute_disk_attached_to_stopped_virtual_machine" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -286,7 +286,7 @@ pipeline "correct_one_compute_disk_attached_to_stopped_virtual_machine" {
           label        = "Detach Disk"
           value        = "detach_disk"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_detach_compute_disk
+          pipeline_ref = azure.pipeline.detach_compute_disk
           pipeline_args = {
             vm_name         = param.vm_name
             disk_name       = param.disk_name
@@ -301,7 +301,7 @@ pipeline "correct_one_compute_disk_attached_to_stopped_virtual_machine" {
           label        = "Delete Disk"
           value        = "delete_disk"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_compute_disk
+          pipeline_ref = azure.pipeline.delete_compute_disk
           pipeline_args = {
             disk_name       = param.disk_name
             resource_group  = param.resource_group

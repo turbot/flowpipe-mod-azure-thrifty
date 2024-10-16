@@ -254,7 +254,7 @@ pipeline "correct_one_compute_disk_if_unattached" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -267,7 +267,7 @@ pipeline "correct_one_compute_disk_if_unattached" {
           label        = "Delete Disk"
           value        = "delete_disk"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_compute_disk
+          pipeline_ref = azure.pipeline.delete_compute_disk
           pipeline_args = {
             disk_name       = param.name
             resource_group  = param.resource_group

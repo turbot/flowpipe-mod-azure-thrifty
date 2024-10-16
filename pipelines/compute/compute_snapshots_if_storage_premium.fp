@@ -245,7 +245,7 @@ pipeline "correct_one_compute_snapshot_if_storage_premium" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -258,7 +258,7 @@ pipeline "correct_one_compute_snapshot_if_storage_premium" {
           label        = "Update Snapshot SKU"
           value        = "update_snapshot_sku"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_update_compute_snapshot
+          pipeline_ref = azure.pipeline.update_compute_snapshot
           pipeline_args = {
             snapshot_name   = param.name
             resource_group  = param.resource_group

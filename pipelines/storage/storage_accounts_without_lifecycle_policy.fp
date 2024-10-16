@@ -246,7 +246,7 @@ pipeline "correct_one_storage_account_without_lifecycle_policy" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -259,7 +259,7 @@ pipeline "correct_one_storage_account_without_lifecycle_policy" {
           label        = "Delete Storage Account"
           value        = "delete_storage_account"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_storage_account
+          pipeline_ref = azure.pipeline.delete_storage_account
           pipeline_args = {
             account_name      = param.name
             resource_group   = param.resource_group

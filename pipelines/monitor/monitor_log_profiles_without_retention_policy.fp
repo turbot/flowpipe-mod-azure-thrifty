@@ -237,7 +237,7 @@ pipeline "correct_one_monitor_log_profile_without_retention_policy" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -250,7 +250,7 @@ pipeline "correct_one_monitor_log_profile_without_retention_policy" {
           label        = "Enable Log Profile Retention"
           value        = "enable_log_profile_retention"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_update_monitor_log_profile_retention_policy
+          pipeline_ref = azure.pipeline.update_monitor_log_profile_retention_policy
           pipeline_args = {
             log_profile_name  = param.name
             subscription_id   = param.subscription_id

@@ -253,7 +253,7 @@ pipeline "correct_one_sql_database_exceeding_max_age" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -266,7 +266,7 @@ pipeline "correct_one_sql_database_exceeding_max_age" {
           label        = "Delete SQL Database"
           value        = "delete_sql_database"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_sql_database
+          pipeline_ref = azure.pipeline.delete_sql_database
           pipeline_args = {
             database_name   = param.name
             resource_group  = param.resource_group

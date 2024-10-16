@@ -247,7 +247,7 @@ pipeline "correct_one_network_application_gateway_without_autoscaling" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -260,7 +260,7 @@ pipeline "correct_one_network_application_gateway_without_autoscaling" {
           label        = "Stop Application Gateway"
           value        = "stop_application_gateway"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_stop_network_application_gateway
+          pipeline_ref = azure.pipeline.stop_network_application_gateway
           pipeline_args = {
             application_gateway_name = param.name
             resource_group           = param.resource_group
