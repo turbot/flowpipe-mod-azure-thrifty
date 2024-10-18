@@ -13,6 +13,47 @@ locals {
     sub.subscription_id = ip.subscription_id
     and ip.ip_configuration_id is null;
   EOQ
+
+  network_public_ips_unattached_default_action_enum  = ["notify", "skip", "delete_ip"]
+  network_public_ips_unattached_enabled_actions_enum = ["skip", "delete_ip"]
+}
+
+variable "network_public_ips_unattached_trigger_enabled" {
+  type        = bool
+  default     = false
+  description = "If true, the trigger is enabled."
+  tags = {
+    folder = "Advanced/Network"
+  }
+}
+
+variable "network_public_ips_unattached_trigger_schedule" {
+  type        = string
+  default     = "15m"
+  description = "The schedule on which to run the trigger if enabled."
+  tags = {
+    folder = "Advanced/Network"
+  }
+}
+
+variable "network_public_ips_unattached_default_action" {
+  type        = string
+  description = "The default action to use for the detected item, used if no input is provided."
+  default     = "notify"
+  enum        = ["notify", "skip", "delete_ip"]
+  tags = {
+    folder = "Advanced/Network"
+  }
+}
+
+variable "network_public_ips_unattached_enabled_actions" {
+  type        = list(string)
+  description = "The list of enabled actions to provide to approvers for selection."
+  default     = ["skip", "delete_ip"]
+  enum        = ["skip", "delete_ip"]
+  tags = {
+    folder = "Advanced/Network"
+  }
 }
 
 trigger "query" "detect_and_correct_network_public_ips_unattached" {
@@ -68,12 +109,14 @@ pipeline "detect_and_correct_network_public_ips_unattached" {
     type        = string
     description = local.description_default_action
     default     = var.network_public_ips_unattached_default_action
+    enum        = local.network_public_ips_unattached_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.network_public_ips_unattached_enabled_actions
+    enum        = local.network_public_ips_unattached_enabled_actions_enum
   }
 
   step "query" "detect" {
@@ -133,12 +176,14 @@ pipeline "correct_network_public_ips_unattached" {
     type        = string
     description = local.description_default_action
     default     = var.network_public_ips_unattached_default_action
+    enum        = local.network_public_ips_unattached_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.network_public_ips_unattached_enabled_actions
+    enum        = local.network_public_ips_unattached_enabled_actions_enum
   }
 
   step "message" "notify_detection_count" {
@@ -223,12 +268,14 @@ pipeline "correct_one_network_public_ip_unattached" {
     type        = string
     description = local.description_default_action
     default     = var.network_public_ips_unattached_default_action
+    enum        = local.network_public_ips_unattached_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.network_public_ips_unattached_enabled_actions
+    enum        = local.network_public_ips_unattached_enabled_actions_enum
   }
 
   step "pipeline" "respond" {
@@ -270,41 +317,5 @@ pipeline "correct_one_network_public_ip_unattached" {
         }
       }
     }
-  }
-}
-
-variable "network_public_ips_unattached_trigger_enabled" {
-  type        = bool
-  default     = false
-  description = "If true, the trigger is enabled."
-  tags = {
-    folder = "Advanced/Network"
-  }
-}
-
-variable "network_public_ips_unattached_trigger_schedule" {
-  type        = string
-  default     = "15m"
-  description = "The schedule on which to run the trigger if enabled."
-  tags = {
-    folder = "Advanced/Network"
-  }
-}
-
-variable "network_public_ips_unattached_default_action" {
-  type        = string
-  description = "The default action to use for the detected item, used if no input is provided."
-  default     = "notify"
-  tags = {
-    folder = "Advanced/Network"
-  }
-}
-
-variable "network_public_ips_unattached_enabled_actions" {
-  type        = list(string)
-  description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_ip"]
-  tags = {
-    folder = "Advanced/Network"
   }
 }

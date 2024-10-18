@@ -28,6 +28,47 @@ locals {
       where
         vm.scale_set_name is null;
   EOQ
+
+  virtual_machine_scale_sets_if_unused_default_action_enum  = ["notify", "skip", "delete_virtual_machine_scale_set"]
+  virtual_machine_scale_sets_if_unused_enabled_actions_enum = ["skip", "delete_virtual_machine_scale_set"]
+}
+
+variable "virtual_machine_scale_sets_if_unused_trigger_enabled" {
+  type        = bool
+  default     = false
+  description = "If true, the trigger is enabled."
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "virtual_machine_scale_sets_if_unused_trigger_schedule" {
+  type        = string
+  default     = "15m"
+  description = "The schedule on which to run the trigger if enabled."
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "virtual_machine_scale_sets_if_unused_default_action" {
+  type        = string
+  description = "The default action to use for the detected item, used if no input is provided."
+  default     = "notify"
+  enum        = ["notify", "skip", "delete_virtual_machine_scale_set"]
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "virtual_machine_scale_sets_if_unused_enabled_actions" {
+  type        = list(string)
+  description = "The list of enabled actions to provide to approvers for selection."
+  default     = ["skip", "delete_virtual_machine_scale_set"]
+  enum        = ["skip", "delete_virtual_machine_scale_set"]
+  tags = {
+    folder = "Advanced/Compute"
+  }
 }
 
 trigger "query" "detect_and_correct_virtual_machine_scale_sets_if_unused" {
@@ -83,12 +124,14 @@ pipeline "detect_and_correct_virtual_machine_scale_sets_if_unused" {
     type        = string
     description = local.description_default_action
     default     = var.virtual_machine_scale_sets_if_unused_default_action
+    enum        = local.virtual_machine_scale_sets_if_unused_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.virtual_machine_scale_sets_if_unused_enabled_actions
+    enum        = local.virtual_machine_scale_sets_if_unused_enabled_actions_enum
   }
 
   step "query" "detect" {
@@ -149,12 +192,14 @@ pipeline "correct_virtual_machine_scale_sets_if_unused" {
     type        = string
     description = local.description_default_action
     default     = var.virtual_machine_scale_sets_if_unused_default_action
+    enum        = local.virtual_machine_scale_sets_if_unused_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.virtual_machine_scale_sets_if_unused_enabled_actions
+    enum        = local.virtual_machine_scale_sets_if_unused_enabled_actions_enum
   }
 
   step "message" "notify_detection_count" {
@@ -239,12 +284,14 @@ pipeline "correct_one_virtual_machine_scale_set_if_unused" {
     type        = string
     description = local.description_default_action
     default     = var.virtual_machine_scale_sets_if_unused_default_action
+    enum        = local.virtual_machine_scale_sets_if_unused_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.virtual_machine_scale_sets_if_unused_enabled_actions
+    enum        = local.virtual_machine_scale_sets_if_unused_enabled_actions_enum
   }
 
   step "pipeline" "respond" {
@@ -276,10 +323,10 @@ pipeline "correct_one_virtual_machine_scale_set_if_unused" {
           style        = local.style_alert
           pipeline_ref = azure.pipeline.delete_virtual_machine_scale_set
           pipeline_args = {
-            vmss_name        = param.name
-            resource_group   = param.resource_group
-            subscription_id  = param.subscription_id
-            conn             = param.conn
+            vmss_name       = param.name
+            resource_group  = param.resource_group
+            subscription_id = param.subscription_id
+            conn            = param.conn
           }
           success_msg = "Deleted Compute virtual machine scale set ${param.title}."
           error_msg   = "Error deleting Compute virtual machine scale set ${param.title}."
@@ -289,38 +336,3 @@ pipeline "correct_one_virtual_machine_scale_set_if_unused" {
   }
 }
 
-variable "virtual_machine_scale_sets_if_unused_trigger_enabled" {
-  type        = bool
-  default     = false
-  description = "If true, the trigger is enabled."
-  tags = {
-    folder = "Advanced/Compute"
-  }
-}
-
-variable "virtual_machine_scale_sets_if_unused_trigger_schedule" {
-  type        = string
-  default     = "15m"
-  description = "The schedule on which to run the trigger if enabled."
-  tags = {
-    folder = "Advanced/Compute"
-  }
-}
-
-variable "virtual_machine_scale_sets_if_unused_default_action" {
-  type        = string
-  description = "The default action to use for the detected item, used if no input is provided."
-  tags = {
-    folder = "Advanced/Compute"
-  }
-  default     = "notify"
-}
-
-variable "virtual_machine_scale_sets_if_unused_enabled_actions" {
-  type        = list(string)
-  description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_virtual_machine_scale_set"]
-  tags = {
-    folder = "Advanced/Compute"
-  }
-}

@@ -1,5 +1,5 @@
 locals {
-  app_service_plans_if_unused = <<-EOQ
+  app_service_plans_if_unused                      = <<-EOQ
     select
       concat(asp.id, ' [', asp.resource_group, '/', asp.subscription_id, ']') as title,
       asp.id as id,
@@ -14,6 +14,46 @@ locals {
       apps is null
       and sku_tier <> 'Free';
   EOQ
+  app_service_plans_if_unused_default_action_enum  = ["notify", "skip", "delete_app_service_plan"]
+  app_service_plans_if_unused_enabled_actions_enum = ["skip", "delete_app_service_plan"]
+}
+
+variable "app_service_plans_if_unused_trigger_enabled" {
+  type        = bool
+  default     = false
+  description = "If true, the trigger is enabled."
+  tags = {
+    folder = "Advanced/AppService"
+  }
+}
+
+variable "app_service_plans_if_unused_trigger_schedule" {
+  type        = string
+  default     = "15m"
+  description = "The schedule on which to run the trigger if enabled."
+  tags = {
+    folder = "Advanced/AppService"
+  }
+}
+
+variable "app_service_plans_if_unused_default_action" {
+  type        = string
+  description = "The default action to use for the detected item, used if no input is provided."
+  default     = "notify"
+  enum        = ["notify", "skip", "delete_app_service_plan"]
+  tags = {
+    folder = "Advanced/AppService"
+  }
+}
+
+variable "app_service_plans_if_unused_enabled_actions" {
+  type        = list(string)
+  description = "The list of enabled actions to provide to approvers for selection."
+  default     = ["skip", "delete_app_service_plan"]
+  enum        = ["skip", "delete_app_service_plan"]
+  tags = {
+    folder = "Advanced/AppService"
+  }
 }
 
 trigger "query" "detect_and_correct_app_service_plans_if_unused" {
@@ -69,12 +109,14 @@ pipeline "detect_and_correct_app_service_plans_if_unused" {
     type        = string
     description = local.description_default_action
     default     = var.app_service_plans_if_unused_default_action
+    enum        = local.app_service_plans_if_unused_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.app_service_plans_if_unused_enabled_actions
+    enum        = local.app_service_plans_if_unused_enabled_actions_enum
   }
 
   step "query" "detect" {
@@ -135,12 +177,14 @@ pipeline "correct_app_service_plans_if_unused" {
     type        = string
     description = local.description_default_action
     default     = var.app_service_plans_if_unused_default_action
+    enum        = local.app_service_plans_if_unused_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.app_service_plans_if_unused_enabled_actions
+    enum        = local.app_service_plans_if_unused_enabled_actions_enum
   }
 
   step "message" "notify_detection_count" {
@@ -225,12 +269,14 @@ pipeline "correct_one_app_service_plan_if_unused" {
     type        = string
     description = local.description_default_action
     default     = var.app_service_plans_if_unused_default_action
+    enum        = local.app_service_plans_if_unused_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.app_service_plans_if_unused_enabled_actions
+    enum        = local.app_service_plans_if_unused_enabled_actions_enum
   }
 
   step "pipeline" "respond" {
@@ -272,41 +318,5 @@ pipeline "correct_one_app_service_plan_if_unused" {
         }
       }
     }
-  }
-}
-
-variable "app_service_plans_if_unused_trigger_enabled" {
-  type        = bool
-  default     = false
-  description = "If true, the trigger is enabled."
-  tags = {
-    folder = "Advanced/AppService"
-  }
-}
-
-variable "app_service_plans_if_unused_trigger_schedule" {
-  type        = string
-  default     = "15m"
-  description = "The schedule on which to run the trigger if enabled."
-  tags = {
-    folder = "Advanced/AppService"
-  }
-}
-
-variable "app_service_plans_if_unused_default_action" {
-  type        = string
-  description = "The default action to use for the detected item, used if no input is provided."
-  default     = "notify"
-  tags = {
-    folder = "Advanced/AppService"
-  }
-}
-
-variable "app_service_plans_if_unused_enabled_actions" {
-  type        = list(string)
-  description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_app_service_plan"]
-  tags = {
-    folder = "Advanced/AppService"
   }
 }

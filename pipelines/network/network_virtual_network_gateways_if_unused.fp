@@ -15,6 +15,47 @@ locals {
     and
       sub.subscription_id = g.subscription_id;
   EOQ
+
+  network_virtual_network_gateways_if_unused_default_action_enum  = ["notify", "skip", "delete_virtual_network_gateway"]
+  network_virtual_network_gateways_if_unused_enabled_actions_enum = ["skip", "delete_virtual_network_gateway"]
+}
+
+variable "network_virtual_network_gateways_if_unused_trigger_enabled" {
+  type        = bool
+  default     = false
+  description = "If true, the trigger is enabled."
+  tags = {
+    folder = "Advanced/Network"
+  }
+}
+
+variable "network_virtual_network_gateways_if_unused_trigger_schedule" {
+  type        = string
+  default     = "15m"
+  description = "The schedule on which to run the trigger if enabled."
+  tags = {
+    folder = "Advanced/Network"
+  }
+}
+
+variable "network_virtual_network_gateways_if_unused_default_action" {
+  type        = string
+  description = "The default action to use for the detected item, used if no input is provided."
+  default     = "notify"
+  enum        = ["notify", "skip", "delete_virtual_network_gateway"]
+  tags = {
+    folder = "Advanced/Network"
+  }
+}
+
+variable "network_virtual_network_gateways_if_unused_enabled_actions" {
+  type        = list(string)
+  description = "The list of enabled actions to provide to approvers for selection."
+  default     = ["skip", "delete_virtual_network_gateway"]
+  enum        = ["skip", "delete_virtual_network_gateway"]
+  tags = {
+    folder = "Advanced/Network"
+  }
 }
 
 trigger "query" "detect_and_correct_network_virtual_network_gateways_if_unused" {
@@ -70,12 +111,14 @@ pipeline "detect_and_correct_network_virtual_network_gateways_if_unused" {
     type        = string
     description = local.description_default_action
     default     = var.network_virtual_network_gateways_if_unused_default_action
+    enum        = local.network_virtual_network_gateways_if_unused_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.network_virtual_network_gateways_if_unused_enabled_actions
+    enum        = local.network_virtual_network_gateways_if_unused_enabled_actions_enum
   }
 
   step "query" "detect" {
@@ -135,12 +178,14 @@ pipeline "correct_network_virtual_network_gateways_if_unused" {
     type        = string
     description = local.description_default_action
     default     = var.network_virtual_network_gateways_if_unused_default_action
+    enum        = local.network_virtual_network_gateways_if_unused_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.network_virtual_network_gateways_if_unused_enabled_actions
+    enum        = local.network_virtual_network_gateways_if_unused_enabled_actions_enum
   }
 
   step "message" "notify_detection_count" {
@@ -225,12 +270,14 @@ pipeline "correct_one_network_virtual_network_gateway_if_unused" {
     type        = string
     description = local.description_default_action
     default     = var.network_virtual_network_gateways_if_unused_default_action
+    enum        = local.network_virtual_network_gateways_if_unused_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.network_virtual_network_gateways_if_unused_enabled_actions
+    enum        = local.network_virtual_network_gateways_if_unused_enabled_actions_enum
   }
 
   step "pipeline" "respond" {
@@ -272,41 +319,5 @@ pipeline "correct_one_network_virtual_network_gateway_if_unused" {
         }
       }
     }
-  }
-}
-
-variable "network_virtual_network_gateways_if_unused_trigger_enabled" {
-  type        = bool
-  default     = false
-  description = "If true, the trigger is enabled."
-  tags = {
-    folder = "Advanced/Network"
-  }
-}
-
-variable "network_virtual_network_gateways_if_unused_trigger_schedule" {
-  type        = string
-  default     = "15m"
-  description = "The schedule on which to run the trigger if enabled."
-  tags = {
-    folder = "Advanced/Network"
-  }
-}
-
-variable "network_virtual_network_gateways_if_unused_default_action" {
-  type        = string
-  description = "The default action to use for the detected item, used if no input is provided."
-  default     = "notify"
-  tags = {
-    folder = "Advanced/Network"
-  }
-}
-
-variable "network_virtual_network_gateways_if_unused_enabled_actions" {
-  type        = list(string)
-  description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_virtual_network_gateway"]
-  tags = {
-    folder = "Advanced/Network"
   }
 }

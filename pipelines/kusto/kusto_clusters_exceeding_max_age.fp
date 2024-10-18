@@ -13,6 +13,56 @@ locals {
     where
       date_part('day', now()-created_time) > ${var.kusto_clusters_exceeding_max_age_days};
   EOQ
+
+  kusto_clusters_exceeding_max_age_default_action_enum  = ["notify", "skip", "delete_cluster"]
+  kusto_clusters_exceeding_max_age_enabled_actions_enum = ["skip", "delete_cluster"]
+}
+
+variable "kusto_clusters_exceeding_max_age_trigger_enabled" {
+  type        = bool
+  default     = false
+  description = "If true, the trigger is enabled."
+  tags = {
+    folder = "Advanced/Kusto"
+  }
+}
+
+variable "kusto_clusters_exceeding_max_age_trigger_schedule" {
+  type        = string
+  default     = "15m"
+  description = "The schedule on which to run the trigger if enabled."
+  tags = {
+    folder = "Advanced/Kusto"
+  }
+}
+
+variable "kusto_clusters_exceeding_max_age_default_action" {
+  type        = string
+  description = "The default action to use for the detected item, used if no input is provided."
+  default     = "notify"
+  enum        = ["notify", "skip", "delete_cluster"]
+  tags = {
+    folder = "Advanced/Kusto"
+  }
+}
+
+variable "kusto_clusters_exceeding_max_age_enabled_actions" {
+  type        = list(string)
+  description = "The list of enabled actions to provide to approvers for selection."
+  default     = ["skip", "delete_cluster"]
+  enum        = ["skip", "delete_cluster"]
+  tags = {
+    folder = "Advanced/Kusto"
+  }
+}
+
+variable "kusto_clusters_exceeding_max_age_days" {
+  type        = number
+  description = "The maximum number of days Kusto clusters can be retained."
+  default     = 90
+  tags = {
+    folder = "Advanced/Kusto"
+  }
 }
 
 trigger "query" "detect_and_correct_kusto_clusters_exceeding_max_age" {
@@ -68,12 +118,14 @@ pipeline "detect_and_correct_kusto_clusters_exceeding_max_age" {
     type        = string
     description = local.description_default_action
     default     = var.kusto_clusters_exceeding_max_age_default_action
+    enum        = local.kusto_clusters_exceeding_max_age_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.kusto_clusters_exceeding_max_age_enabled_actions
+    enum        = local.kusto_clusters_exceeding_max_age_enabled_actions_enum
   }
 
   step "query" "detect" {
@@ -133,12 +185,14 @@ pipeline "correct_kusto_clusters_exceeding_max_age" {
     type        = string
     description = local.description_default_action
     default     = var.kusto_clusters_exceeding_max_age_default_action
+    enum        = local.kusto_clusters_exceeding_max_age_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.kusto_clusters_exceeding_max_age_enabled_actions
+    enum        = local.kusto_clusters_exceeding_max_age_enabled_actions_enum
   }
 
   step "message" "notify_detection_count" {
@@ -223,12 +277,14 @@ pipeline "correct_one_kusto_cluster_exceeding_max_age" {
     type        = string
     description = local.description_default_action
     default     = var.kusto_clusters_exceeding_max_age_default_action
+    enum        = local.kusto_clusters_exceeding_max_age_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.kusto_clusters_exceeding_max_age_enabled_actions
+    enum        = local.kusto_clusters_exceeding_max_age_enabled_actions_enum
   }
 
   step "pipeline" "respond" {
@@ -260,10 +316,10 @@ pipeline "correct_one_kusto_cluster_exceeding_max_age" {
           style        = local.style_alert
           pipeline_ref = azure.pipeline.delete_kusto_cluster
           pipeline_args = {
-            cluster_name     = param.name
-            resource_group   = param.resource_group
-            subscription_id  = param.subscription_id
-            conn             = param.conn
+            cluster_name    = param.name
+            resource_group  = param.resource_group
+            subscription_id = param.subscription_id
+            conn            = param.conn
           }
           success_msg = "Deleted Kusto cluster ${param.title}."
           error_msg   = "Error deleting Kusto cluster ${param.title}."
@@ -273,47 +329,3 @@ pipeline "correct_one_kusto_cluster_exceeding_max_age" {
   }
 }
 
-variable "kusto_clusters_exceeding_max_age_trigger_enabled" {
-  type        = bool
-  default     = false
-  description = "If true, the trigger is enabled."
-  tags = {
-    folder = "Advanced/Kusto"
-  }
-}
-
-variable "kusto_clusters_exceeding_max_age_trigger_schedule" {
-  type        = string
-  default     = "15m"
-  description = "The schedule on which to run the trigger if enabled."
-  tags = {
-    folder = "Advanced/Kusto"
-  }
-}
-
-variable "kusto_clusters_exceeding_max_age_default_action" {
-  type        = string
-  description = "The default action to use for the detected item, used if no input is provided."
-  default     = "notify"
-  tags = {
-    folder = "Advanced/Kusto"
-  }
-}
-
-variable "kusto_clusters_exceeding_max_age_enabled_actions" {
-  type        = list(string)
-  description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_cluster"]
-  tags = {
-    folder = "Advanced/Kusto"
-  }
-}
-
-variable "kusto_clusters_exceeding_max_age_days" {
-  type        = number
-  description = "The maximum number of days Kusto clusters can be retained."
-  default     = 90
-  tags = {
-    folder = "Advanced/Kusto"
-  }
-}
