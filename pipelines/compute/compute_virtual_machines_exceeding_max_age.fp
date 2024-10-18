@@ -155,7 +155,7 @@ pipeline "correct_compute_virtual_machines_exceeding_max_age" {
   title         = "Correct Compute virtual machines exceeding max age"
   description   = "Runs corrective action on a collection of Compute virtual machines exceeding max age."
   documentation = file("./pipelines/compute/docs/correct_compute_virtual_machines_exceeding_max_age.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -233,7 +233,7 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
   title         = "Correct one Compute virtual machine exceeding max age"
   description   = "Runs corrective action on an Compute virtual machine exceeding max age."
   documentation = file("./pipelines/compute/docs/correct_one_compute_virtual_machine_exceeding_max_age.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

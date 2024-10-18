@@ -141,7 +141,7 @@ pipeline "correct_compute_snapshots_if_storage_premium" {
   title         = "Correct Compute snapshots with premium storage"
   description   = "Runs corrective action on a collection of Compute snapshots with premium storage."
   documentation = file("./pipelines/compute/docs/correct_compute_snapshots_if_storage_premium.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -219,7 +219,7 @@ pipeline "correct_one_compute_snapshot_if_storage_premium" {
   title         = "Correct one Compute snapshot with premium storage"
   description   = "Runs corrective action on a Compute snapshot with premium storage."
   documentation = file("./pipelines/compute/docs/correct_one_compute_snapshot_if_storage_premium.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

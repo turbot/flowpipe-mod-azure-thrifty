@@ -141,7 +141,7 @@ pipeline "correct_network_public_ips_unattached" {
   title         = "Correct Network unattached public IPs"
   description   = "Runs corrective action on a collection of Network unattached public IPs."
   documentation = file("./pipelines/network/docs/correct_network_public_ips_unattached.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+  tags          = merge(local.network_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -219,7 +219,7 @@ pipeline "correct_one_network_public_ip_unattached" {
   title         = "Correct one Network unattached public IP"
   description   = "Runs corrective action on an unattached Network public IP."
   documentation = file("./pipelines/network/docs/correct_one_network_public_ip_unattached.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+  tags          = merge(local.network_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "resource" {
     type        = string

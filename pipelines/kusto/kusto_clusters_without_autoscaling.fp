@@ -142,7 +142,7 @@ pipeline "correct_kusto_clusters_without_autoscaling" {
   title         = "Correct Kusto clusters without autoscaling"
   description   = "Runs corrective action on a collection of Kusto clusters without autoscaling enabled."
   documentation = file("./pipelines/kusto/docs/correct_kusto_clusters_without_autoscaling.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused" })
+  tags          = merge(local.kusto_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -221,7 +221,7 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
   title         = "Correct one Kusto cluster without autoscaling"
   description   = "Runs corrective action on a single Kusto cluster without autoscaling enabled."
   documentation = file("./pipelines/kusto/docs/correct_one_kusto_cluster_without_autoscaling.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused" })
+  tags          = merge(local.kusto_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

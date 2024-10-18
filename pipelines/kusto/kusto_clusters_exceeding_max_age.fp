@@ -150,7 +150,7 @@ pipeline "correct_kusto_clusters_exceeding_max_age" {
   title         = "Correct Kusto clusters exceeding max age"
   description   = "Runs corrective action on a collection of Kusto clusters exceeding max age."
   documentation = file("./pipelines/kusto/docs/correct_kusto_clusters_exceeding_max_age.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused" })
+  tags          = merge(local.kusto_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -228,7 +228,7 @@ pipeline "correct_one_kusto_cluster_exceeding_max_age" {
   title         = "Correct one Kusto cluster exceeding max age"
   description   = "Runs corrective action on a Kusto cluster exceeding max age."
   documentation = file("./pipelines/kusto/docs/correct_one_kusto_cluster_exceeding_max_age.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused" })
+  tags          = merge(local.kusto_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

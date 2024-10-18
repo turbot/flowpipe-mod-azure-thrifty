@@ -152,7 +152,7 @@ pipeline "correct_compute_disks_with_high_iops" {
   title         = "Correct Compute disks with high IOPS"
   description   = "Runs corrective action on a collection of Compute disks with high IOPS."
   documentation = file("./pipelines/compute/docs/correct_compute_disks_with_high_iops.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -231,7 +231,7 @@ pipeline "correct_one_compute_disk_with_high_iops" {
   title         = "Correct one Compute disk with high IOPS"
   description   = "Runs corrective action on a single Compute disk with high IOPS."
   documentation = file("./pipelines/compute/docs/correct_one_compute_disk_with_high_iops.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

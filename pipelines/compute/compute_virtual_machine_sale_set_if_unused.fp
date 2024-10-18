@@ -156,7 +156,7 @@ pipeline "correct_virtual_machine_scale_sets_if_unused" {
   title         = "Correct Compute virtual machine scale sets if unused"
   description   = "Runs corrective action on a collection of Compute virtual machine scale sets which are unused."
   documentation = file("./pipelines/compute/docs/correct_virtual_machine_scale_sets_if_unused.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -235,7 +235,7 @@ pipeline "correct_one_virtual_machine_scale_set_if_unused" {
   title         = "Correct one Compute virtual machine scale set if unused"
   description   = "Runs corrective action on a single Compute virtual machine scale set which is unused."
   documentation = file("./pipelines/compute/docs/correct_one_virtual_machine_scale_set_if_unused.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

@@ -142,7 +142,7 @@ pipeline "correct_network_nat_gateways_if_unused" {
   title         = "Correct Network NAT gateways if unused"
   description   = "Runs corrective action on a collection of Network NAT gateways which are unused."
   documentation = file("./pipelines/network/docs/correct_network_nat_gateways_if_unused.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+  tags          = merge(local.network_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -221,7 +221,7 @@ pipeline "correct_one_network_nat_gateway_if_unused" {
   title         = "Correct one Network NAT gateway if unused"
   description   = "Runs corrective action on a single network NAT gateway which is unused."
   documentation = file("./pipelines/network/docs/correct_one_network_nat_gateway_if_unused.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+  tags          = merge(local.network_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

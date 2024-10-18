@@ -142,7 +142,7 @@ pipeline "correct_network_application_gateways_without_autoscaling" {
   title         = "Correct Network application gateways without autoscaling"
   description   = "Runs corrective action on a collection of Network application gateways without autoscaling enabled."
   documentation = file("./pipelines/network/docs/correct_network_application_gateways_without_autoscaling.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+  tags          = merge(local.network_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -221,7 +221,7 @@ pipeline "correct_one_network_application_gateway_without_autoscaling" {
   title         = "Correct one Network application gateway without autoscaling"
   description   = "Runs corrective action on a single Network application gateway without autoscaling enabled."
   documentation = file("./pipelines/network/docs/correct_one_network_application_gateway_without_autoscaling.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+  tags          = merge(local.network_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

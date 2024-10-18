@@ -142,7 +142,7 @@ pipeline "correct_storage_accounts_without_lifecycle_policy" {
   title         = "Correct Storage accounts without lifecycle policy"
   description   = "Runs corrective action on a collection of Storage accounts without lifecycle policy."
   documentation = file("./pipelines/storage/docs/correct_storage_accounts_without_lifecycle_policy.md")
-  tags          = merge(local.storage_common_tags, { class = "unused" })
+  tags          = merge(local.storage_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -220,7 +220,7 @@ pipeline "correct_one_storage_account_without_lifecycle_policy" {
   title         = "Correct one Storage account without lifecycle policy"
   description   = "Runs corrective action on Storage account without lifecycle policy."
   documentation = file("./pipelines/storage/docs/correct_one_storage_account_without_lifecycle_policy.md")
-  tags          = merge(local.storage_common_tags, { class = "unused" })
+  tags          = merge(local.storage_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

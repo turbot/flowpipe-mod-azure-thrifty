@@ -235,7 +235,7 @@ pipeline "correct_compute_virtual_machines_with_low_utilization" {
   title         = "Correct Compute virtual machines with low utilization"
   description   = "Corrects Compute virtual machines with low utilization based on the chosen action."
   documentation = file("./pipelines/compute/docs/correct_compute_virtual_machines_with_low_utilization.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -320,7 +320,7 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
   title         = "Correct one Compute virtual machine with low utilization"
   description   = "Runs corrective action on a single Compute virtual machine with low utilization."
   documentation = file("./pipelines/compute/docs/correct_one_compute_virtual_machine_with_low_utilization.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

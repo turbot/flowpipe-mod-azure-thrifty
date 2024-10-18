@@ -141,7 +141,7 @@ pipeline "correct_app_service_plans_if_unused" {
   title         = "Correct App Service plans if unused"
   description   = "Runs corrective action on a collection of App Service plans which are unused."
   documentation = file("./pipelines/appservice/docs/correct_app_service_plans_if_unused.md")
-  tags          = merge(local.appservice_common_tags, { class = "unused" })
+  tags          = merge(local.appservice_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -220,7 +220,7 @@ pipeline "correct_one_app_service_plan_if_unused" {
   title         = "Correct one App Service plan if unused"
   description   = "Runs corrective action on a single App Service plan which is unused."
   documentation = file("./pipelines/appservice/docs/correct_one_app_service_plan_if_unused.md")
-  tags          = merge(local.appservice_common_tags, { class = "unused" })
+  tags          = merge(local.appservice_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

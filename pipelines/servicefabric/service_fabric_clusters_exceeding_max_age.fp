@@ -141,7 +141,7 @@ pipeline "correct_service_fabric_clusters_exceeding_max_age" {
   title         = "Correct Service Fabric clusters exceeding max age"
   description   = "Runs corrective action on a collection of Service Fabric clusters exceeding max age."
   documentation = file("./pipelines/servicefabric/docs/correct_service_fabric_clusters_exceeding_max_age.md")
-  // tags          = merge(local.service_fabric_common_tags, { class = "unused" })
+  tags          = merge(local.service_fabric_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -219,7 +219,7 @@ pipeline "correct_one_service_fabric_cluster_exceeding_max_age" {
   title         = "Correct one Service Fabric cluster exceeding max age"
   description   = "Runs corrective action on a Service Fabric cluster exceeding max age."
   documentation = file("./pipelines/servicefabric/docs/correct_one_service_fabric_cluster_exceeding_max_age.md")
-  // tags          = merge(local.service_fabric_common_tags, { class = "unused" })
+  tags          = merge(local.service_fabric_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

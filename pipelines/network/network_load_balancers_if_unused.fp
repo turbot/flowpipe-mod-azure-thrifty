@@ -152,7 +152,7 @@ pipeline "correct_network_load_balancers_if_unused" {
   title         = "Correct Network load balancers if unused"
   description   = "Runs corrective action on a collection of Network load balancers which are unused."
   documentation = file("./pipelines/network/docs/correct_network_load_balancers_if_unused.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+  tags          = merge(local.network_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -231,7 +231,7 @@ pipeline "correct_one_network_load_balancer_if_unused" {
   title         = "Correct one Network load balancer if unused"
   description   = "Runs corrective action on a single Network load balancer which is unused."
   documentation = file("./pipelines/network/docs/correct_one_network_load_balancer_if_unused.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+  tags          = merge(local.network_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

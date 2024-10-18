@@ -155,7 +155,7 @@ pipeline "correct_compute_disks_attached_to_stopped_virtual_machines" {
   title         = "Correct Compute disks attached to stopped VMs"
   description   = "Runs corrective action on a collection of Compute disks attached to stopped virtual machines."
   documentation = file("./pipelines/compute/docs/correct_compute_disks_attached_to_stopped_virtual_machines.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -236,7 +236,7 @@ pipeline "correct_one_compute_disk_attached_to_stopped_virtual_machine" {
   title         = "Correct one Compute disks attached to stopped VMs"
   description   = "Runs corrective action on a collection of Compute disks attached to stopped virtual machines."
   documentation = file("./pipelines/compute/docs/correct_one_compute_disk_attached_to_stopped_virtual_machine.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

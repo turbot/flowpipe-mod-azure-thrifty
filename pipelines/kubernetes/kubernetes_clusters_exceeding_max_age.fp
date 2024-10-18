@@ -150,7 +150,7 @@ pipeline "correct_kubernetes_clusters_exceeding_max_age" {
   title         = "Correct Kubernetes clusters exceeding max age"
   description   = "Runs corrective action on a collection of Kubernetes clusters exceeding max age."
   documentation = file("./pipelines/kubernetes/docs/correct_kubernetes_clusters_exceeding_max_age.md")
-  tags          = merge(local.kubernetes_common_tags, { class = "unused" })
+  tags          = merge(local.kubernetes_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -228,7 +228,7 @@ pipeline "correct_one_kubernetes_cluster_exceeding_max_age" {
   title         = "Correct one Kubernetes cluster exceeding max age"
   description   = "Runs corrective action on a Kubernetes cluster exceeding max age."
   documentation = file("./pipelines/kubernetes/docs/correct_one_kubernetes_cluster_exceeding_max_age.md")
-  tags          = merge(local.kubernetes_common_tags, { class = "unused" })
+  tags          = merge(local.kubernetes_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

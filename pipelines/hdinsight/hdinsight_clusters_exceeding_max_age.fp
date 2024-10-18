@@ -150,7 +150,7 @@ pipeline "correct_hdinsight_clusters_exceeding_max_age" {
   title         = "Correct HDInsight clusters exceeding max age"
   description   = "Runs corrective action on a collection of HDInsight clusters exceeding max age."
   documentation = file("./pipelines/hdinsight/docs/correct_hdinsight_clusters_exceeding_max_age.md")
-  tags          = merge(local.hdinsight_common_tags, { class = "unused" })
+  tags          = merge(local.hdinsight_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -228,7 +228,7 @@ pipeline "correct_one_hdinsight_cluster_exceeding_max_age" {
   title         = "Correct one HDInsight cluster exceeding max age"
   description   = "Runs corrective action on an HDInsight cluster exceeding max age."
   documentation = file("./pipelines/hdinsight/docs/correct_one_hdinsight_cluster_exceeding_max_age.md")
-  tags          = merge(local.hdinsight_common_tags, { class = "unused" })
+  tags          = merge(local.hdinsight_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

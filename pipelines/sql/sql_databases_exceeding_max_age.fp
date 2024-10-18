@@ -151,7 +151,7 @@ pipeline "correct_sql_databases_exceeding_max_age" {
   title         = "Correct SQL databases exceeding max age"
   description   = "Runs corrective action on a collection of SQL databases exceeding max age."
   documentation = file("./pipelines/sql/docs/correct_sql_databases_exceeding_max_age.md")
-  tags          = merge(local.sql_common_tags, { class = "unused" })
+  tags          = merge(local.sql_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -231,7 +231,7 @@ pipeline "correct_one_sql_database_exceeding_max_age" {
   title         = "Correct one SQL database exceeding max age"
   description   = "Runs corrective action on an SQL database exceeding max age."
   documentation = file("./pipelines/sql/docs/correct_one_sql_database_exceeding_max_age.md")
-  tags          = merge(local.sql_common_tags, { class = "unused" })
+  tags          = merge(local.sql_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

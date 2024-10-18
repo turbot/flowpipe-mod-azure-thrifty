@@ -143,7 +143,7 @@ pipeline "correct_network_virtual_network_gateways_if_unused" {
   title         = "Correct Network virtual network gateways if unused"
   description   = "Runs corrective action on a collection of Network virtual network gateways which are unused."
   documentation = file("./pipelines/network/docs/correct_network_virtual_network_gateways_if_unused.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+  tags          = merge(local.network_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -221,7 +221,7 @@ pipeline "correct_one_network_virtual_network_gateway_if_unused" {
   title         = "Correct one Network virtual network gateway if unused"
   description   = "Runs corrective action on a single Network virtual network gateway which is unused."
   documentation = file("./pipelines/network/docs/correct_one_network_virtual_network_gateway_if_unused.md")
-  tags          = merge(local.network_common_tags, { class = "unused" })
+  tags          = merge(local.network_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string

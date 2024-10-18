@@ -140,7 +140,7 @@ pipeline "correct_monitor_log_profiles_without_retention_policy" {
   title         = "Correct Monitor log profiles without retention policy"
   description   = "Runs corrective action on a collection of Monitor log profiles without retention policy."
   documentation = file("./pipelines/monitor/docs/correct_monitor_log_profiles_without_retention_policy.md")
-  tags          = merge(local.monitor_common_tags, { class = "unused" })
+  tags          = merge(local.monitor_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -216,7 +216,7 @@ pipeline "correct_one_monitor_log_profile_without_retention_policy" {
   title         = "Correct one Monitor log profile without retention policy"
   description   = "Runs corrective action on a Monitor log profile without retention policy."
   documentation = file("./pipelines/monitor/docs/correct_one_monitor_log_profile_without_retention_policy.md")
-  tags          = merge(local.monitor_common_tags, { class = "unused" })
+  tags          = merge(local.monitor_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string
