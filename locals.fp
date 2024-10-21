@@ -18,7 +18,7 @@ locals {
 }
 
 locals {
-  notification_level_enum = ["verbose", "info", "error"]
+  notification_level_enum = ["info", "verbose", "error"]
 }
 
 // Common Texts
