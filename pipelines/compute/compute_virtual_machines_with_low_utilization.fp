@@ -191,6 +191,7 @@ pipeline "detect_and_correct_compute_virtual_machines_with_low_utilization" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
@@ -261,6 +262,7 @@ pipeline "correct_compute_virtual_machines_with_low_utilization" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
@@ -377,6 +379,7 @@ pipeline "correct_one_compute_virtual_machine_with_low_utilization" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {

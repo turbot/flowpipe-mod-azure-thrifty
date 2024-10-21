@@ -107,6 +107,7 @@ pipeline "detect_and_correct_sql_databases_exceeding_max_age" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
@@ -175,6 +176,7 @@ pipeline "correct_sql_databases_exceeding_max_age" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
@@ -273,6 +275,7 @@ pipeline "correct_one_sql_database_exceeding_max_age" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {

@@ -98,6 +98,7 @@ pipeline "detect_and_correct_kusto_clusters_without_autoscaling" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
@@ -166,6 +167,7 @@ pipeline "correct_kusto_clusters_without_autoscaling" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
@@ -258,6 +260,7 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {

@@ -96,6 +96,7 @@ pipeline "detect_and_correct_monitor_log_profiles_without_retention_policy" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
@@ -162,6 +163,7 @@ pipeline "correct_monitor_log_profiles_without_retention_policy" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
@@ -248,6 +250,7 @@ pipeline "correct_one_monitor_log_profile_without_retention_policy" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {

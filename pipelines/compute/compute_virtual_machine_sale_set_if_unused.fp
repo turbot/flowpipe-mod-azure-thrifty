@@ -112,6 +112,7 @@ pipeline "detect_and_correct_virtual_machine_scale_sets_if_unused" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
@@ -180,6 +181,7 @@ pipeline "correct_virtual_machine_scale_sets_if_unused" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
@@ -272,6 +274,7 @@ pipeline "correct_one_virtual_machine_scale_set_if_unused" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {

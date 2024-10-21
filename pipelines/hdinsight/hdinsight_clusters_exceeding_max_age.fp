@@ -106,6 +106,7 @@ pipeline "detect_and_correct_hdinsight_clusters_exceeding_max_age" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
@@ -173,6 +174,7 @@ pipeline "correct_hdinsight_clusters_exceeding_max_age" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
@@ -265,6 +267,7 @@ pipeline "correct_one_hdinsight_cluster_exceeding_max_age" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {

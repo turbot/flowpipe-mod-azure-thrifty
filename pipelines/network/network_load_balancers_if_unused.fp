@@ -108,6 +108,7 @@ pipeline "detect_and_correct_network_load_balancers_if_unused" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
@@ -176,6 +177,7 @@ pipeline "correct_network_load_balancers_if_unused" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
@@ -268,6 +270,7 @@ pipeline "correct_one_network_load_balancer_if_unused" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
