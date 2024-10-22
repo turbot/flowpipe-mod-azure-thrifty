@@ -41,13 +41,63 @@ locals {
       d.name || ' averaging ' || avg_max || ' read and write ops over the last ' || days / 2 || ' days.' as title,
       u.resource_group,
       u.subscription_id,
-      d._ctx ->> 'connection_name' as cred
+      d.sp_connection_name as conn
     from
       disk_usage as u left join azure_compute_disk as d on u.name = d.name
       left join azure_subscription as sub on sub.subscription_id = d.subscription_id
     where
       u.avg_max <= ${var.compute_disk_avg_max_usage};
   EOQ
+
+  compute_disks_with_low_usage_default_action_enum  = ["notify", "skip", "delete_disk"]
+  compute_disks_with_low_usage_enabled_actions_enum = ["skip", "delete_disk"]
+}
+
+variable "compute_disks_with_low_usage_trigger_enabled" {
+  type        = bool
+  default     = false
+  description = "If true, the trigger is enabled."
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_disks_with_low_usage_trigger_schedule" {
+  type        = string
+  default     = "15m"
+  description = "The schedule on which to run the trigger if enabled."
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_disks_with_low_usage_default_action" {
+  type        = string
+  description = "The default action to use for the detected item, used if no input is provided."
+  default     = "notify"
+  enum        = ["notify", "skip", "delete_disk"]
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_disks_with_low_usage_enabled_actions" {
+  type        = list(string)
+  description = "The list of enabled actions to provide to approvers for selection."
+  default     = ["skip", "delete_disk"]
+  enum        = ["skip", "delete_disk"]
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_disk_avg_max_usage" {
+  type        = number
+  description = "The compute disks average read and write operations."
+  default     = 90
+  tags = {
+    folder = "Advanced/Compute"
+  }
 }
 
 trigger "query" "detect_and_correct_compute_disks_with_low_usage" {
@@ -73,16 +123,16 @@ pipeline "detect_and_correct_compute_disks_with_low_usage" {
   title         = "Detect & correct Compute disk with low usage"
   description   = "Detects Compute disk with low usage."
   documentation = file("./pipelines/compute/docs/detect_and_correct_compute_disks_with_low_usage.md")
-  tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.compute_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -91,10 +141,11 @@ pipeline "detect_and_correct_compute_disks_with_low_usage" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -103,12 +154,14 @@ pipeline "detect_and_correct_compute_disks_with_low_usage" {
     type        = string
     description = local.description_default_action
     default     = var.compute_disks_with_low_usage_default_action
+    enum        = local.compute_disks_with_low_usage_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.compute_disks_with_low_usage_enabled_actions
+    enum        = local.compute_disks_with_low_usage_enabled_actions_enum
   }
 
   step "query" "detect" {
@@ -133,7 +186,7 @@ pipeline "correct_compute_disks_with_low_usage" {
   title         = "Correct Compute disks with low usage"
   description   = "Runs corrective action on a collection of Compute Disks with low usage."
   documentation = file("./pipelines/compute/docs/correct_compute_disks_with_low_usage.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -141,13 +194,13 @@ pipeline "correct_compute_disks_with_low_usage" {
       disk_name       = string
       resource_group  = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -156,10 +209,11 @@ pipeline "correct_compute_disks_with_low_usage" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -168,17 +222,19 @@ pipeline "correct_compute_disks_with_low_usage" {
     type        = string
     description = local.description_default_action
     default     = var.compute_disks_with_low_usage_default_action
+    enum        = local.compute_disks_with_low_usage_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.compute_disks_with_low_usage_enabled_actions
+    enum        = local.compute_disks_with_low_usage_enabled_actions_enum
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} Compute disks with low usage."
   }
 
@@ -195,7 +251,7 @@ pipeline "correct_compute_disks_with_low_usage" {
       disk_name          = each.value.disk_name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
-      cred               = each.value.cred
+      conn               = connection.azure[each.value.conn]
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -209,7 +265,7 @@ pipeline "correct_one_compute_disk_with_low_usage" {
   title         = "Correct one Compute disk with low usage"
   description   = "Runs corrective action on a Compute disk with low usage."
   documentation = file("./pipelines/compute/docs/correct_one_compute_disk_with_low_usage.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string
@@ -231,13 +287,13 @@ pipeline "correct_one_compute_disk_with_low_usage" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -246,10 +302,11 @@ pipeline "correct_one_compute_disk_with_low_usage" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -258,12 +315,14 @@ pipeline "correct_one_compute_disk_with_low_usage" {
     type        = string
     description = local.description_default_action
     default     = var.compute_disks_with_low_usage_default_action
+    enum        = local.compute_disks_with_low_usage_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.compute_disks_with_low_usage_enabled_actions
+    enum        = local.compute_disks_with_low_usage_enabled_actions_enum
   }
 
   step "pipeline" "respond" {
@@ -280,7 +339,7 @@ pipeline "correct_one_compute_disk_with_low_usage" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -293,12 +352,12 @@ pipeline "correct_one_compute_disk_with_low_usage" {
           label        = "Delete disk"
           value        = "delete_disk"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_compute_disk
+          pipeline_ref = azure.pipeline.delete_compute_disk
           pipeline_args = {
             disk_name       = param.disk_name
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
-            cred            = param.cred
+            conn            = param.conn
           }
           success_msg = "Deleted Compute disk ${param.title}."
           error_msg   = "Error deleting Compute disk ${param.title}."
@@ -308,32 +367,3 @@ pipeline "correct_one_compute_disk_with_low_usage" {
   }
 }
 
-variable "compute_disks_with_low_usage_trigger_enabled" {
-  type        = bool
-  default     = false
-  description = "If true, the trigger is enabled."
-}
-
-variable "compute_disks_with_low_usage_trigger_schedule" {
-  type        = string
-  default     = "15m"
-  description = "The schedule on which to run the trigger if enabled."
-}
-
-variable "compute_disks_with_low_usage_default_action" {
-  type        = string
-  description = "The default action to use for the detected item, used if no input is provided."
-  default     = "notify"
-}
-
-variable "compute_disks_with_low_usage_enabled_actions" {
-  type        = list(string)
-  description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_disk"]
-}
-
-variable "compute_disk_avg_max_usage" {
-  type        = number
-  description = "The compute disks average read and write operations."
-  default     = 90
-}

@@ -6,14 +6,55 @@ locals {
       kc.name,
       kc.resource_group,
       kc.subscription_id,
-      kc._ctx ->> 'connection_name' as cred
+      kc.sp_connection_name as conn
     from
       azure_kusto_cluster as kc,
       azure_subscription as sub
     where
-			sub.subscription_id = kc.subscription_id
+      sub.subscription_id = kc.subscription_id
       and optimized_autoscale is null;
   EOQ
+
+  kusto_clusters_without_autoscaling_default_action_enum  = ["notify", "skip", "stop_kusto_cluster"]
+  kusto_clusters_without_autoscaling_enabled_actions_enum = ["skip", "stop_kusto_cluster"]
+}
+
+variable "kusto_clusters_without_autoscaling_trigger_enabled" {
+  type        = bool
+  default     = false
+  description = "If true, the trigger is enabled."
+  tags = {
+    folder = "Advanced/Kusto"
+  }
+}
+
+variable "kusto_clusters_without_autoscaling_trigger_schedule" {
+  type        = string
+  default     = "15m"
+  description = "The schedule on which to run the trigger if enabled."
+  tags = {
+    folder = "Advanced/Kusto"
+  }
+}
+
+variable "kusto_clusters_without_autoscaling_default_action" {
+  type        = string
+  description = "The default action to use for the detected item, used if no input is provided."
+  default     = "notify"
+  enum        = ["notify", "skip", "stop_kusto_cluster"]
+  tags = {
+    folder = "Advanced/Kusto"
+  }
+}
+
+variable "kusto_clusters_without_autoscaling_enabled_actions" {
+  type        = list(string)
+  description = "The list of enabled actions to provide to approvers for selection."
+  default     = ["skip", "stop_kusto_cluster"]
+  enum        = ["skip", "stop_kusto_cluster"]
+  tags = {
+    folder = "Advanced/Kusto"
+  }
 }
 
 trigger "query" "detect_and_correct_kusto_clusters_without_autoscaling" {
@@ -39,16 +80,16 @@ pipeline "detect_and_correct_kusto_clusters_without_autoscaling" {
   title         = "Detect & correct Kusto clusters without autoscaling"
   description   = "Detects Kusto clusters without autoscaling enabled and runs your chosen action."
   documentation = file("./pipelines/kusto/docs/detect_and_correct_kusto_clusters_without_autoscaling.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.kusto_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -57,10 +98,11 @@ pipeline "detect_and_correct_kusto_clusters_without_autoscaling" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -69,12 +111,14 @@ pipeline "detect_and_correct_kusto_clusters_without_autoscaling" {
     type        = string
     description = local.description_default_action
     default     = var.kusto_clusters_without_autoscaling_default_action
+    enum        = local.kusto_clusters_without_autoscaling_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.kusto_clusters_without_autoscaling_enabled_actions
+    enum        = local.kusto_clusters_without_autoscaling_enabled_actions_enum
   }
 
   step "query" "detect" {
@@ -99,7 +143,7 @@ pipeline "correct_kusto_clusters_without_autoscaling" {
   title         = "Correct Kusto clusters without autoscaling"
   description   = "Runs corrective action on a collection of Kusto clusters without autoscaling enabled."
   documentation = file("./pipelines/kusto/docs/correct_kusto_clusters_without_autoscaling.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused" })
+  tags          = merge(local.kusto_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -108,13 +152,13 @@ pipeline "correct_kusto_clusters_without_autoscaling" {
       name            = string
       resource_group  = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -123,10 +167,11 @@ pipeline "correct_kusto_clusters_without_autoscaling" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -135,17 +180,19 @@ pipeline "correct_kusto_clusters_without_autoscaling" {
     type        = string
     description = local.description_default_action
     default     = var.kusto_clusters_without_autoscaling_default_action
+    enum        = local.kusto_clusters_without_autoscaling_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.kusto_clusters_without_autoscaling_enabled_actions
+    enum        = local.kusto_clusters_without_autoscaling_enabled_actions_enum
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} Kusto Clusters without autoscaling enabled."
   }
 
@@ -162,7 +209,7 @@ pipeline "correct_kusto_clusters_without_autoscaling" {
       name               = each.value.name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
-      cred               = each.value.cred
+      conn               = connection.azure[each.value.conn]
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -176,7 +223,7 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
   title         = "Correct one Kusto cluster without autoscaling"
   description   = "Runs corrective action on a single Kusto cluster without autoscaling enabled."
   documentation = file("./pipelines/kusto/docs/correct_one_kusto_cluster_without_autoscaling.md")
-  tags          = merge(local.kusto_common_tags, { class = "unused" })
+  tags          = merge(local.kusto_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string
@@ -198,13 +245,13 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -213,10 +260,11 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -225,12 +273,14 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
     type        = string
     description = local.description_default_action
     default     = var.kusto_clusters_without_autoscaling_default_action
+    enum        = local.kusto_clusters_without_autoscaling_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.kusto_clusters_without_autoscaling_enabled_actions
+    enum        = local.kusto_clusters_without_autoscaling_enabled_actions_enum
   }
 
   step "pipeline" "respond" {
@@ -247,7 +297,7 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -260,12 +310,12 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
           label        = "Stop Kusto Cluster"
           value        = "stop_kusto_cluster"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_stop_kusto_cluster
+          pipeline_ref = azure.pipeline.stop_kusto_cluster
           pipeline_args = {
-            cluster_name     = param.name
-            resource_group   = param.resource_group
-            subscription_id  = param.subscription_id
-            cred             = param.cred
+            cluster_name    = param.name
+            resource_group  = param.resource_group
+            subscription_id = param.subscription_id
+            conn            = param.conn
           }
           success_msg = "Stopped Kusto cluster ${param.title}."
           error_msg   = "Error stopping Kusto cluster ${param.title}."
@@ -273,28 +323,4 @@ pipeline "correct_one_kusto_cluster_without_autoscaling" {
       }
     }
   }
-}
-
-variable "kusto_clusters_without_autoscaling_trigger_enabled" {
-  type        = bool
-  default     = false
-  description = "If true, the trigger is enabled."
-}
-
-variable "kusto_clusters_without_autoscaling_trigger_schedule" {
-  type        = string
-  default     = "15m"
-  description = "The schedule on which to run the trigger if enabled."
-}
-
-variable "kusto_clusters_without_autoscaling_default_action" {
-  type        = string
-  description = "The default action to use for the detected item, used if no input is provided."
-  default     = "notify"
-}
-
-variable "kusto_clusters_without_autoscaling_enabled_actions" {
-  type        = list(string)
-  description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "stop_kusto_cluster"]
 }
