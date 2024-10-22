@@ -5,7 +5,7 @@ locals {
     s.name,
     s.resource_group,
     s.subscription_id,
-    s._ctx ->> 'connection_name' as cred
+    s.sp_connection_name as conn
   from
     azure_compute_snapshot as s,
     azure_subscription as sub
@@ -13,6 +13,56 @@ locals {
     date_part('day', now()-time_created) > ${var.compute_snapshots_exceeding_max_age_days}
     and sub.subscription_id = s.subscription_id;
   EOQ
+
+  compute_snapshots_exceeding_max_age_default_action_enum  = ["notify", "skip", "delete_snapshot"]
+  compute_snapshots_exceeding_max_age_enabled_actions_enum = ["skip", "delete_snapshot"]
+}
+
+variable "compute_snapshots_exceeding_max_age_trigger_enabled" {
+  type        = bool
+  default     = false
+  description = "If true, the trigger is enabled."
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_snapshots_exceeding_max_age_trigger_schedule" {
+  type        = string
+  default     = "15m"
+  description = "The schedule on which to run the trigger if enabled."
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_snapshots_exceeding_max_age_default_action" {
+  type        = string
+  description = "The default action to use for the detected item, used if no input is provided."
+  default     = "notify"
+  enum        = ["notify", "skip", "delete_snapshot"]
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_snapshots_exceeding_max_age_enabled_actions" {
+  type        = list(string)
+  description = "The list of enabled actions to provide to approvers for selection."
+  default     = ["skip", "delete_snapshot"]
+  enum        = ["skip", "delete_snapshot"]
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_snapshots_exceeding_max_age_days" {
+  type        = number
+  description = "The maximum number of days Compute snapshots can be retained."
+  default     = 90
+  tags = {
+    folder = "Advanced/Compute"
+  }
 }
 
 trigger "query" "detect_and_correct_compute_snapshots_exceeding_max_age" {
@@ -38,16 +88,16 @@ pipeline "detect_and_correct_compute_snapshots_exceeding_max_age" {
   title         = "Detect & correct Compute snapshots exceeding max age"
   description   = "Detects Compute snapshots exceeding max age and runs your chosen action."
   documentation = file("./pipelines/compute/docs/detect_and_correct_compute_snapshots_exceeding_max_age.md")
-  tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.compute_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -56,10 +106,11 @@ pipeline "detect_and_correct_compute_snapshots_exceeding_max_age" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -68,12 +119,14 @@ pipeline "detect_and_correct_compute_snapshots_exceeding_max_age" {
     type        = string
     description = local.description_default_action
     default     = var.compute_snapshots_exceeding_max_age_default_action
+    enum        = local.compute_snapshots_exceeding_max_age_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.compute_snapshots_exceeding_max_age_enabled_actions
+    enum        = local.compute_snapshots_exceeding_max_age_enabled_actions_enum
   }
 
   step "query" "detect" {
@@ -98,7 +151,7 @@ pipeline "correct_compute_snapshots_exceeding_max_age" {
   title         = "Correct Compute snapshots exceeding max age"
   description   = "Runs corrective action on a collection of Compute snapshots exceeding max age."
   documentation = file("./pipelines/compute/docs/correct_compute_snapshots_exceeding_max_age.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -106,13 +159,13 @@ pipeline "correct_compute_snapshots_exceeding_max_age" {
       name            = string
       resource_group  = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -121,10 +174,11 @@ pipeline "correct_compute_snapshots_exceeding_max_age" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -133,17 +187,19 @@ pipeline "correct_compute_snapshots_exceeding_max_age" {
     type        = string
     description = local.description_default_action
     default     = var.compute_snapshots_exceeding_max_age_default_action
+    enum        = local.compute_snapshots_exceeding_max_age_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.compute_snapshots_exceeding_max_age_enabled_actions
+    enum        = local.compute_snapshots_exceeding_max_age_enabled_actions_enum
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} Compute snapshots exceeding maximum age."
   }
 
@@ -160,7 +216,7 @@ pipeline "correct_compute_snapshots_exceeding_max_age" {
       name               = each.value.name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
-      cred               = each.value.cred
+      conn               = connection.azure[each.value.conn]
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -174,7 +230,7 @@ pipeline "correct_one_compute_snapshot_exceeding_max_age" {
   title         = "Correct one Compute snapshot exceeding max age"
   description   = "Runs corrective action on an Compute snapshot exceeding max age."
   documentation = file("./pipelines/compute/docs/correct_one_compute_snapshot_exceeding_max_age.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string
@@ -196,13 +252,13 @@ pipeline "correct_one_compute_snapshot_exceeding_max_age" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -211,10 +267,11 @@ pipeline "correct_one_compute_snapshot_exceeding_max_age" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -223,12 +280,14 @@ pipeline "correct_one_compute_snapshot_exceeding_max_age" {
     type        = string
     description = local.description_default_action
     default     = var.compute_snapshots_exceeding_max_age_default_action
+    enum        = local.compute_snapshots_exceeding_max_age_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.compute_snapshots_exceeding_max_age_enabled_actions
+    enum        = local.compute_snapshots_exceeding_max_age_enabled_actions_enum
   }
 
   step "pipeline" "respond" {
@@ -245,7 +304,7 @@ pipeline "correct_one_compute_snapshot_exceeding_max_age" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -258,12 +317,12 @@ pipeline "correct_one_compute_snapshot_exceeding_max_age" {
           label        = "Delete Snapshot"
           value        = "delete_snapshot"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_compute_snapshot
+          pipeline_ref = azure.pipeline.delete_compute_snapshot
           pipeline_args = {
-            snapshot_name    = param.name
-            resource_group   = param.resource_group
-            subscription_id  = param.subscription_id
-            cred             = param.cred
+            snapshot_name   = param.name
+            resource_group  = param.resource_group
+            subscription_id = param.subscription_id
+            conn            = param.conn
           }
           success_msg = "Deleted Compute snapshot ${param.title}."
           error_msg   = "Error deleting Compute snapshot ${param.title}."
@@ -273,32 +332,3 @@ pipeline "correct_one_compute_snapshot_exceeding_max_age" {
   }
 }
 
-variable "compute_snapshots_exceeding_max_age_trigger_enabled" {
-  type        = bool
-  default     = false
-  description = "If true, the trigger is enabled."
-}
-
-variable "compute_snapshots_exceeding_max_age_trigger_schedule" {
-  type        = string
-  default     = "15m"
-  description = "The schedule on which to run the trigger if enabled."
-}
-
-variable "compute_snapshots_exceeding_max_age_default_action" {
-  type        = string
-  description = "The default action to use for the detected item, used if no input is provided."
-  default     = "notify"
-}
-
-variable "compute_snapshots_exceeding_max_age_enabled_actions" {
-  type        = list(string)
-  description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_snapshot"]
-}
-
-variable "compute_snapshots_exceeding_max_age_days" {
-  type        = number
-  description = "The maximum number of days Compute snapshots can be retained."
-  default     = 90
-}

@@ -7,7 +7,7 @@ locals {
     vm.subscription_id,
     vm.resource_group,
     vm.title,
-    vm._ctx ->> 'connection_name' as cred
+    vm.sp_connection_name as conn
   from
     azure_compute_virtual_machine as vm,
     jsonb_array_elements(statuses) as s,
@@ -18,6 +18,56 @@ locals {
     and s ->> 'time' is not null
     and date_part('day', now() - (s ->> 'time') :: timestamptz) > ${var.compute_running_vm_age_max_days};
   EOQ
+
+  compute_virtual_machines_exceeding_max_age_default_action_enum  = ["notify", "skip", "delete_virtual_machine"]
+  compute_virtual_machines_exceeding_max_age_enabled_actions_enum = ["skip", "delete_virtual_machine"]
+}
+
+variable "compute_virtual_machines_exceeding_max_age_trigger_enabled" {
+  type        = bool
+  default     = false
+  description = "If true, the trigger is enabled."
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_virtual_machines_exceeding_max_age_trigger_schedule" {
+  type        = string
+  default     = "15m"
+  description = "The schedule on which to run the trigger if enabled."
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_virtual_machines_exceeding_max_age_default_action" {
+  type        = string
+  description = "The default action to use for the detected item, used if no input is provided."
+  default     = "notify"
+  enum        = ["notify", "skip", "delete_virtual_machine"]
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_virtual_machines_exceeding_max_age_enabled_actions" {
+  type        = list(string)
+  description = "The list of enabled actions to provide to approvers for selection."
+  default     = ["skip", "delete_virtual_machine"]
+  enum        = ["skip", "delete_virtual_machine"]
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_running_vm_age_max_days" {
+  type        = number
+  description = "The maximum number of days Compute VM can be retained."
+  default     = 90
+  tags = {
+    folder = "Advanced/Compute"
+  }
 }
 
 trigger "query" "detect_and_correct_compute_virtual_machines_exceeding_max_age" {
@@ -43,16 +93,16 @@ pipeline "detect_and_correct_compute_virtual_machines_exceeding_max_age" {
   title         = "Detect & correct Compute virtual machines exceeding max age"
   description   = "Detects Compute virtual machines exceeding max age and runs your chosen action."
   documentation = file("./pipelines/compute/docs/detect_and_correct_compute_virtual_machines_exceeding_max_age.md")
-  tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.compute_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -61,10 +111,11 @@ pipeline "detect_and_correct_compute_virtual_machines_exceeding_max_age" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -73,12 +124,14 @@ pipeline "detect_and_correct_compute_virtual_machines_exceeding_max_age" {
     type        = string
     description = local.description_default_action
     default     = var.compute_virtual_machines_exceeding_max_age_default_action
+    enum        = local.compute_virtual_machines_exceeding_max_age_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.compute_virtual_machines_exceeding_max_age_enabled_actions
+    enum        = local.compute_virtual_machines_exceeding_max_age_enabled_actions_enum
   }
 
   step "query" "detect" {
@@ -103,7 +156,7 @@ pipeline "correct_compute_virtual_machines_exceeding_max_age" {
   title         = "Correct Compute virtual machines exceeding max age"
   description   = "Runs corrective action on a collection of Compute virtual machines exceeding max age."
   documentation = file("./pipelines/compute/docs/correct_compute_virtual_machines_exceeding_max_age.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -111,13 +164,13 @@ pipeline "correct_compute_virtual_machines_exceeding_max_age" {
       name            = string
       resource_group  = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
     description = local.description_items
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -126,10 +179,11 @@ pipeline "correct_compute_virtual_machines_exceeding_max_age" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -138,17 +192,19 @@ pipeline "correct_compute_virtual_machines_exceeding_max_age" {
     type        = string
     description = local.description_default_action
     default     = var.compute_virtual_machines_exceeding_max_age_default_action
+    enum        = local.compute_virtual_machines_exceeding_max_age_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.compute_virtual_machines_exceeding_max_age_enabled_actions
+    enum        = local.compute_virtual_machines_exceeding_max_age_enabled_actions_enum
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} Compute virtual machines exceeding maximum age."
   }
 
@@ -165,7 +221,7 @@ pipeline "correct_compute_virtual_machines_exceeding_max_age" {
       name               = each.value.name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
-      cred               = each.value.cred
+      conn               = connection.azure[each.value.conn]
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -179,7 +235,7 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
   title         = "Correct one Compute virtual machine exceeding max age"
   description   = "Runs corrective action on an Compute virtual machine exceeding max age."
   documentation = file("./pipelines/compute/docs/correct_one_compute_virtual_machine_exceeding_max_age.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string
@@ -201,13 +257,13 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -216,10 +272,11 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -228,12 +285,14 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
     type        = string
     description = local.description_default_action
     default     = var.compute_virtual_machines_exceeding_max_age_default_action
+    enum        = local.compute_virtual_machines_exceeding_max_age_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.compute_virtual_machines_exceeding_max_age_enabled_actions
+    enum        = local.compute_virtual_machines_exceeding_max_age_enabled_actions_enum
   }
 
   step "pipeline" "respond" {
@@ -250,7 +309,7 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -263,12 +322,12 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
           label        = "Stop Virtual Machine"
           value        = "stop_virtual_machine"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_stop_compute_virtual_machine
+          pipeline_ref = azure.pipeline.stop_compute_virtual_machine
           pipeline_args = {
             vm_name         = param.name
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
-            cred            = param.cred
+            conn            = param.conn
           }
           success_msg = "Stopped Compute virtual machine ${param.title}."
           error_msg   = "Error stoping Compute virtual machine ${param.title}."
@@ -277,12 +336,12 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
           label        = "Delete Virtual Machine"
           value        = "delete_virtual_machine"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_compute_virtual_machine
+          pipeline_ref = azure.pipeline.delete_compute_virtual_machine
           pipeline_args = {
             vm_name         = param.name
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
-            cred            = param.cred
+            conn            = param.conn
           }
           success_msg = "Deleted Compute virtual machine ${param.title}."
           error_msg   = "Error deleting Compute virtual machine ${param.title}."
@@ -290,34 +349,4 @@ pipeline "correct_one_compute_virtual_machine_exceeding_max_age" {
       }
     }
   }
-}
-
-variable "compute_virtual_machines_exceeding_max_age_trigger_enabled" {
-  type        = bool
-  default     = false
-  description = "If true, the trigger is enabled."
-}
-
-variable "compute_virtual_machines_exceeding_max_age_trigger_schedule" {
-  type        = string
-  default     = "15m"
-  description = "The schedule on which to run the trigger if enabled."
-}
-
-variable "compute_virtual_machines_exceeding_max_age_default_action" {
-  type        = string
-  description = "The default action to use for the detected item, used if no input is provided."
-  default     = "notify"
-}
-
-variable "compute_virtual_machines_exceeding_max_age_enabled_actions" {
-  type        = list(string)
-  description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "delete_virtual_machine"]
-}
-
-variable "compute_running_vm_age_max_days" {
-  type        = number
-  description = "The maximum number of days Compute VM can be retained."
-  default     = 90
 }

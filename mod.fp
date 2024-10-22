@@ -4,18 +4,23 @@ mod "azure_thrifty" {
   color         = "#0089D6"
   documentation = file("./README.md")
   icon          = "/images/mods/turbot/azure-thrifty.svg"
-  categories    = ["azure", "cost", "thrifty", "public cloud"]
+  categories    = ["azure", "cost", "public cloud", "standard", "thrifty"]
+
   opengraph {
     title       = "Azure Thrifty Mod for Flowpipe"
     description = "Run pipelines to detect and correct Azure resources that are unused and underutilized."
     image       = "/images/mods/turbot/azure-thrifty-social-graphic.png"
   }
+
   require {
+    flowpipe {
+      min_version = "1.0.0"
+    }
     mod "github.com/turbot/flowpipe-mod-detect-correct" {
-      version = "*"
+      version = "^1"
     }
     mod "github.com/turbot/flowpipe-mod-azure" {
-      version = "v0.2.0-rc.4"
+      version = "^1"
     }
   }
 }

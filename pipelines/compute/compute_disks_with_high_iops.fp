@@ -7,14 +7,65 @@ locals {
       d.resource_group,
       d.subscription_id,
       d.name || to_char(current_date, 'YYYYMMDD') as snapshot_name,
-      d._ctx ->> 'connection_name' as cred
+      d.sp_connection_name as conn
     from
       azure_compute_disk as d
       left join azure_subscription as sub on sub.subscription_id = d.subscription_id
     where
       d.disk_iops_read_write > var.compute_disk_max_iops_threshold;
   EOQ
+
+  compute_disks_with_high_iops_default_action_enum  = ["notify", "skip", "snapshot_and_delete_disk", "delete_disk"]
+  compute_disks_with_high_iops_enabled_actions_enum = ["skip", "snapshot_and_delete_disk", "delete_disk"]
 }
+
+variable "compute_disks_with_high_iops_enabled_actions" {
+  type        = list(string)
+  description = "The list of enabled actions to provide to approvers for selection."
+  default     = ["skip", "snapshot_and_delete_disk", "delete_disk"]
+  enum        = ["skip", "snapshot_and_delete_disk", "delete_disk"]
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_disks_with_high_iops_default_action" {
+  type        = string
+  description = "The default action to use for the detected item, used if no input is provided."
+  default     = "notify"
+  enum        = ["notify", "skip", "snapshot_and_delete_disk", "delete_disk"]
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_disks_with_high_iops_trigger_enabled" {
+  type        = bool
+  default     = false
+  description = "If true, the trigger is enabled."
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_disks_with_high_iops_trigger_schedule" {
+  type        = string
+  default     = "15m"
+  description = "The schedule on which to run the trigger if enabled."
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
+variable "compute_disk_max_iops_threshold" {
+  type        = number
+  description = "The maximum IOPS threshold to consider a disk as having high IOPS."
+  default     = 20000
+  tags = {
+    folder = "Advanced/Compute"
+  }
+}
+
 
 trigger "query" "detect_and_correct_compute_disks_with_high_iops" {
   title         = "Detect & correct Compute disks with high IOPS"
@@ -39,16 +90,16 @@ pipeline "detect_and_correct_compute_disks_with_high_iops" {
   title         = "Detect & correct Compute disks with high IOPS"
   description   = "Detects Compute disks with high IOPS and runs your chosen action."
   documentation = file("./pipelines/compute/docs/detect_and_correct_compute_disks_with_high_iops.md")
-  tags          = merge(local.compute_common_tags, { class = "unused", type = "featured" })
+  tags          = merge(local.compute_common_tags, { class = "unused", recommended = "true" })
 
   param "database" {
-    type        = string
+    type        = connection.steampipe
     description = local.description_database
     default     = var.database
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -57,10 +108,11 @@ pipeline "detect_and_correct_compute_disks_with_high_iops" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -69,12 +121,14 @@ pipeline "detect_and_correct_compute_disks_with_high_iops" {
     type        = string
     description = local.description_default_action
     default     = var.compute_disks_with_high_iops_default_action
+    enum        = local.compute_disks_with_high_iops_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.compute_disks_with_high_iops_enabled_actions
+    enum        = local.compute_disks_with_high_iops_enabled_actions_enum
   }
 
   step "query" "detect" {
@@ -99,7 +153,7 @@ pipeline "correct_compute_disks_with_high_iops" {
   title         = "Correct Compute disks with high IOPS"
   description   = "Runs corrective action on a collection of Compute disks with high IOPS."
   documentation = file("./pipelines/compute/docs/correct_compute_disks_with_high_iops.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "items" {
     type = list(object({
@@ -108,12 +162,12 @@ pipeline "correct_compute_disks_with_high_iops" {
       snapshot_name   = string
       resource_group  = string
       subscription_id = string
-      cred            = string
+      conn            = string
     }))
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -122,10 +176,11 @@ pipeline "correct_compute_disks_with_high_iops" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -134,17 +189,19 @@ pipeline "correct_compute_disks_with_high_iops" {
     type        = string
     description = local.description_default_action
     default     = var.compute_disks_with_high_iops_default_action
+    enum        = local.compute_disks_with_high_iops_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.compute_disks_with_high_iops_enabled_actions
+    enum        = local.compute_disks_with_high_iops_enabled_actions_enum
   }
 
   step "message" "notify_detection_count" {
-    if       = var.notification_level == local.level_verbose
-    notifier = notifier[param.notifier]
+    if       = var.notification_level == local.level_info
+    notifier = param.notifier
     text     = "Detected ${length(param.items)} Compute disks with high IOPS."
   }
 
@@ -162,7 +219,7 @@ pipeline "correct_compute_disks_with_high_iops" {
       snapshot_name      = each.value.snapshot_name
       resource_group     = each.value.resource_group
       subscription_id    = each.value.subscription_id
-      cred               = each.value.cred
+      conn               = connection.azure[each.value.conn]
       notifier           = param.notifier
       notification_level = param.notification_level
       approvers          = param.approvers
@@ -176,7 +233,7 @@ pipeline "correct_one_compute_disk_with_high_iops" {
   title         = "Correct one Compute disk with high IOPS"
   description   = "Runs corrective action on a single Compute disk with high IOPS."
   documentation = file("./pipelines/compute/docs/correct_one_compute_disk_with_high_iops.md")
-  tags          = merge(local.compute_common_tags, { class = "unused" })
+  tags          = merge(local.compute_common_tags, { class = "unused" }, { folder = "Internal" })
 
   param "title" {
     type        = string
@@ -203,13 +260,13 @@ pipeline "correct_one_compute_disk_with_high_iops" {
     description = local.description_subscription_id
   }
 
-  param "cred" {
-    type        = string
-    description = local.description_credential
+  param "conn" {
+    type        = connection.azure
+    description = local.description_connection
   }
 
   param "notifier" {
-    type        = string
+    type        = notifier
     description = local.description_notifier
     default     = var.notifier
   }
@@ -218,10 +275,11 @@ pipeline "correct_one_compute_disk_with_high_iops" {
     type        = string
     description = local.description_notifier_level
     default     = var.notification_level
+    enum        = local.notification_level_enum
   }
 
   param "approvers" {
-    type        = list(string)
+    type        = list(notifier)
     description = local.description_approvers
     default     = var.approvers
   }
@@ -229,13 +287,15 @@ pipeline "correct_one_compute_disk_with_high_iops" {
   param "default_action" {
     type        = string
     description = local.description_default_action
-    default     = var.compute_snapshots_exceeding_max_age_default_action
+    default     = var.compute_disks_with_high_iops_default_action
+    enum        = local.compute_disks_with_high_iops_default_action_enum
   }
 
   param "enabled_actions" {
     type        = list(string)
     description = local.description_enabled_actions
     default     = var.compute_disks_with_high_iops_enabled_actions
+    enum        = local.compute_disks_with_high_iops_enabled_actions_enum
   }
 
   step "pipeline" "respond" {
@@ -252,7 +312,7 @@ pipeline "correct_one_compute_disk_with_high_iops" {
           label        = "Skip"
           value        = "skip"
           style        = local.style_info
-          pipeline_ref = local.pipeline_optional_message
+          pipeline_ref = detect_correct.pipeline.optional_message
           pipeline_args = {
             notifier = param.notifier
             send     = param.notification_level == local.level_verbose
@@ -265,12 +325,12 @@ pipeline "correct_one_compute_disk_with_high_iops" {
           label        = "Delete Disk"
           value        = "delete_disk"
           style        = local.style_alert
-          pipeline_ref = local.azure_pipeline_delete_compute_disk
+          pipeline_ref = azure.pipeline.delete_compute_disk
           pipeline_args = {
             disk_name       = param.disk_name
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
-            cred            = param.cred
+            conn            = param.conn
           }
           success_msg = "Deleted Compute disk ${param.title}."
           error_msg   = "Error deleting Compute disk ${param.title}."
@@ -284,7 +344,7 @@ pipeline "correct_one_compute_disk_with_high_iops" {
             disk_name       = param.disk_name
             resource_group  = param.resource_group
             subscription_id = param.subscription_id
-            cred            = param.cred
+            conn            = param.conn
             snapshot_name   = param.snapshot_name
           }
           success_msg = "Deleted Compute disk ${param.title}."
@@ -293,34 +353,4 @@ pipeline "correct_one_compute_disk_with_high_iops" {
       }
     }
   }
-}
-
-variable "compute_disks_with_high_iops_enabled_actions" {
-  type        = list(string)
-  description = "The list of enabled actions to provide to approvers for selection."
-  default     = ["skip", "snapshot_and_delete_disk", "delete_disk"]
-}
-
-variable "compute_disks_with_high_iops_default_action" {
-  type        = string
-  description = "The default action to use for the detected item, used if no input is provided."
-  default     = "notify"
-}
-
-variable "compute_disks_with_high_iops_trigger_enabled" {
-  type        = bool
-  default     = false
-  description = "If true, the trigger is enabled."
-}
-
-variable "compute_disks_with_high_iops_trigger_schedule" {
-  type        = string
-  default     = "15m"
-  description = "The schedule on which to run the trigger if enabled."
-}
-
-variable "compute_disk_max_iops_threshold" {
-  type        = number
-  description = "The maximum IOPS threshold to consider a disk as having high IOPS."
-  default     = 20000
 }
